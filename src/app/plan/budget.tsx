@@ -1,10 +1,10 @@
 import { router } from "expo-router";
 import { Pressable, View } from "react-native";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { BudgetHero } from "@/components/wizard/hero-budget";
 import { WizardScreen } from "@/components/wizard/wizard-screen";
+import { cn } from "@/lib/utils";
 import { BUDGET_PRESETS } from "@/lib/trip-data";
 import { useTripStore } from "@/stores/trip-store";
 
@@ -29,32 +29,45 @@ export default function BudgetScreen() {
     >
       <View>
         <View className="relative">
-          <View className="absolute bottom-0 left-3 top-0 z-10 justify-center">
-            <Text variant="muted" className="text-base">
-              $
-            </Text>
+          <View className="absolute bottom-0 left-4 top-0 z-10 justify-center">
+            <Text className="text-lg font-bold text-muted-foreground">$</Text>
           </View>
           <Input
             value={budget !== null ? String(budget) : ""}
             onChangeText={handleChange}
             placeholder="0"
             keyboardType="number-pad"
-            className="pl-8"
+            className="h-14 pl-9 text-lg"
             autoFocus
           />
         </View>
 
         <View className="mt-4 flex-row flex-wrap gap-2">
-          {BUDGET_PRESETS.map((preset) => (
-            <Pressable key={preset} onPress={() => setBudget(preset)}>
-              <Badge
-                variant={budget === preset ? "default" : "outline"}
-                className="px-4 py-1.5"
+          {BUDGET_PRESETS.map((preset) => {
+            const isSelected = budget === preset;
+            return (
+              <Pressable
+                key={preset}
+                onPress={() => setBudget(preset)}
+                hitSlop={4}
+                className={cn(
+                  "h-11 items-center justify-center rounded-full border-2 px-5 active:opacity-80",
+                  isSelected
+                    ? "border-primary bg-primary"
+                    : "border-border bg-muted/50 active:bg-muted",
+                )}
               >
-                <Text>${preset.toLocaleString()}</Text>
-              </Badge>
-            </Pressable>
-          ))}
+                <Text
+                  className={cn(
+                    "font-bold",
+                    isSelected ? "text-primary-foreground" : "text-foreground",
+                  )}
+                >
+                  ${preset.toLocaleString()}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
       </View>
     </WizardScreen>

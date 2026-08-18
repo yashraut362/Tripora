@@ -20,7 +20,7 @@ export default function PlanLayout() {
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       <View className="flex-row items-center gap-3 px-4 py-2">
-        {stepIndex > 0 ? (
+        {stepIndex > 0 || router.canGoBack() ? (
           <Button variant="ghost" size="icon" onPress={() => router.back()}>
             <Icon as={ChevronLeft} className="size-6" />
           </Button>

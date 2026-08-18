@@ -9,10 +9,11 @@ import { useTripStore } from "@/stores/trip-store";
 export default function ActivitiesScreen() {
   const activities = useTripStore((s) => s.activities);
   const setActivities = useTripStore((s) => s.setActivities);
-  const complete = useTripStore((s) => s.complete);
+  const saveTrip = useTripStore((s) => s.saveTrip);
+  const editing = useTripStore((s) => s.editingTripId !== null);
 
   const finish = () => {
-    complete();
+    saveTrip();
     router.dismissTo("/");
   };
 
@@ -22,7 +23,7 @@ export default function ActivitiesScreen() {
       title="What do you love doing?"
       subtitle="Pick as many as you like."
       hero={<ActivitiesHero selected={activities} />}
-      nextLabel="Finish"
+      nextLabel={editing ? "Save changes" : "Finish"}
       nextDisabled={activities.length === 0}
       onNext={finish}
     >
