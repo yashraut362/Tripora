@@ -8,6 +8,7 @@ import { ScalePressable } from "@/components/scale-pressable";
 import { Text } from "@/components/ui/text";
 import { useThemeColors } from "@/lib/theme";
 import { TRAVEL_IMAGES } from "@/lib/travel-images";
+import { ACTIVITIES } from "@/lib/trip-data";
 import { useTripStore, type Trip } from "@/stores/trip-store";
 
 const EASE = Easing.bezier(0.32, 0.72, 0, 1);
@@ -37,7 +38,9 @@ function TripRow({
   onDelete: () => void;
 }) {
   const colors = useThemeColors();
-  const activityCount = trip.activities.length;
+  const tripActivities = ACTIVITIES.filter((a) =>
+    trip.activities.includes(a.id),
+  );
 
   return (
     <Animated.View
@@ -45,37 +48,53 @@ function TripRow({
         .duration(600)
         .easing(EASE)}
     >
-      <View className="mb-3 flex-row items-center rounded-[24px] bg-card px-5 py-4">
-        <View className="flex-1 pr-3">
-          <Text
-            className="font-sans-bold text-lg text-foreground"
-            numberOfLines={1}
-          >
-            {trip.destination}
-          </Text>
-          <Text className="mt-1 font-sans-medium text-xs text-muted-foreground">
-            {trip.days} {trip.days === 1 ? "day" : "days"} · $
-            {(trip.budget ?? 0).toLocaleString()} · {activityCount}{" "}
-            {activityCount === 1 ? "activity" : "activities"}
-          </Text>
+      <View className="mb-3 rounded-[24px] bg-card px-5 py-4">
+        <View className="flex-row items-center">
+          <View className="flex-1 pr-3">
+            <Text
+              className="font-sans-bold text-lg text-foreground"
+              numberOfLines={1}
+            >
+              {trip.destination}
+            </Text>
+            <Text className="mt-1 font-sans-medium text-xs text-muted-foreground">
+              {trip.days} {trip.days === 1 ? "day" : "days"} · $
+              {(trip.budget ?? 0).toLocaleString()}
+            </Text>
+          </View>
+
+          <View className="flex-row gap-2">
+            <ScalePressable
+              onPress={onEdit}
+              hitSlop={4}
+              className="h-10 w-10 items-center justify-center rounded-full bg-primary"
+            >
+              <PencilSimple size={15} weight="bold" color={colors.primaryForeground} />
+            </ScalePressable>
+            <ScalePressable
+              onPress={onDelete}
+              hitSlop={4}
+              className="h-10 w-10 items-center justify-center rounded-full bg-muted"
+            >
+              <TrashSimple size={15} weight="bold" color={colors.destructive} />
+            </ScalePressable>
+          </View>
         </View>
 
-        <View className="flex-row gap-2">
-          <ScalePressable
-            onPress={onEdit}
-            hitSlop={4}
-            className="h-10 w-10 items-center justify-center rounded-full bg-primary"
-          >
-            <PencilSimple size={15} weight="bold" color={colors.primaryForeground} />
-          </ScalePressable>
-          <ScalePressable
-            onPress={onDelete}
-            hitSlop={4}
-            className="h-10 w-10 items-center justify-center rounded-full bg-muted"
-          >
-            <TrashSimple size={15} weight="bold" color={colors.destructive} />
-          </ScalePressable>
-        </View>
+        {tripActivities.length > 0 ? (
+          <View className="mt-3 flex-row flex-wrap gap-1.5">
+            {tripActivities.map((activity) => (
+              <View
+                key={activity.id}
+                className="rounded-full bg-muted px-3 py-1.5"
+              >
+                <Text className="font-sans-semibold text-[11px] text-muted-foreground">
+                  {activity.label}
+                </Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
       </View>
     </Animated.View>
   );
@@ -83,10 +102,17 @@ function TripRow({
 
 export default function Index() {
   const trips = useTripStore((s) => s.trips);
+  const hasHydrated = useTripStore((s) => s.hasHydrated);
   const startNewTrip = useTripStore((s) => s.startNewTrip);
   const startEditTrip = useTripStore((s) => s.startEditTrip);
   const deleteTrip = useTripStore((s) => s.deleteTrip);
   const colors = useThemeColors();
+
+  // Wait for saved trips to load from disk before deciding where to land —
+  // the animated splash is still covering the screen at this point.
+  if (!hasHydrated) {
+    return null;
+  }
 
   if (trips.length === 0) {
     return <Redirect href="/plan/destination" />;
@@ -142,7 +168,7 @@ export default function Index() {
             <ScalePressable
               onPress={planNewTrip}
               hitSlop={6}
-              className="h-12 w-12 items-center justify-center rounded-full bg-primary"
+              className="h-11 flex-row items-center gap-1.5 rounded-full bg-primary pl-4 pr-5"
               style={{
                 shadowColor: "#000",
                 shadowOpacity: 0.15,
@@ -151,7 +177,10 @@ export default function Index() {
                 elevation: 5,
               }}
             >
-              <Plus size={22} weight="bold" color={colors.primaryForeground} />
+              <Plus size={16} weight="bold" color={colors.primaryForeground} />
+              <Text className="font-sans-bold text-sm text-primary-foreground">
+                New trip
+              </Text>
             </ScalePressable>
           </View>
           <Text className="mt-1 font-sans-medium text-sm text-muted-foreground">

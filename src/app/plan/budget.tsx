@@ -38,7 +38,7 @@ export default function BudgetScreen() {
           <Input
             value={budget !== null ? String(budget) : ""}
             onChangeText={handleChange}
-            placeholder="0"
+            placeholder="1,000"
             keyboardType="number-pad"
             className="flex-1 bg-transparent pl-3"
           />

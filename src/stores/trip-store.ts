@@ -1,4 +1,6 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 export interface TripSelections {
   destination: string;
@@ -15,6 +17,9 @@ interface TripStore extends TripSelections {
   // The flat selection fields above act as the wizard's draft.
   trips: Trip[];
   editingTripId: string | null;
+  // True once saved trips have been loaded from disk — gate the
+  // "no trips -> wizard" redirect on this so it doesn't fire early.
+  hasHydrated: boolean;
   setDestination: (destination: string) => void;
   setDays: (days: number) => void;
   setBudget: (budget: number | null) => void;
@@ -28,17 +33,20 @@ interface TripStore extends TripSelections {
 const emptyDraft: TripSelections = {
   destination: "",
   days: 5,
-  budget: null,
+  budget: 1000,
   activities: [],
 };
 
 const newTripId = () =>
   Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 
-export const useTripStore = create<TripStore>()((set) => ({
+export const useTripStore = create<TripStore>()(
+  persist(
+    (set) => ({
   ...emptyDraft,
   trips: [],
   editingTripId: null,
+  hasHydrated: false,
   setDestination: (destination) => set({ destination }),
   setDays: (days) => set({ days }),
   setBudget: (budget) => set({ budget }),
@@ -82,4 +90,15 @@ export const useTripStore = create<TripStore>()((set) => ({
         ? { trips, ...emptyDraft, editingTripId: null }
         : { trips };
     }),
-}));
+    }),
+    {
+      name: "tripora-trips",
+      storage: createJSONStorage(() => AsyncStorage),
+      // Persist only the saved trips; the wizard draft stays ephemeral.
+      partialize: (s) => ({ trips: s.trips }),
+      onRehydrateStorage: () => () => {
+        useTripStore.setState({ hasHydrated: true });
+      },
+    },
+  ),
+);
