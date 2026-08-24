@@ -11,6 +11,8 @@ import { TRAVEL_IMAGES } from "@/lib/travel-images";
 import { useTripStore, type Trip } from "@/stores/trip-store";
 
 const EASE = Easing.bezier(0.32, 0.72, 0, 1);
+// Keep the last list row clear of the floating tab bar (64 tall + 12 offset + breathing room).
+const TAB_BAR_CLEARANCE = 88;
 
 function Stat({ value, label }: { value: string; label: string }) {
   return (
@@ -135,9 +137,23 @@ export default function Index() {
               contentFit="contain"
             />
           </View>
-          <Text variant="h1" className="mt-2">
-            My Trips
-          </Text>
+          <View className="mt-2 flex-row items-center justify-between">
+            <Text variant="h1">My Trips</Text>
+            <ScalePressable
+              onPress={planNewTrip}
+              hitSlop={6}
+              className="h-12 w-12 items-center justify-center rounded-full bg-primary"
+              style={{
+                shadowColor: "#000",
+                shadowOpacity: 0.15,
+                shadowRadius: 8,
+                shadowOffset: { width: 0, height: 4 },
+                elevation: 5,
+              }}
+            >
+              <Plus size={22} weight="bold" color={colors.primaryForeground} />
+            </ScalePressable>
+          </View>
           <Text className="mt-1 font-sans-medium text-sm text-muted-foreground">
             {trips.length} {trips.length === 1 ? "adventure" : "adventures"} planned
           </Text>
@@ -157,7 +173,7 @@ export default function Index() {
 
         <ScrollView
           className="mt-5 flex-1"
-          contentContainerClassName="pb-4"
+          contentContainerStyle={{ paddingBottom: TAB_BAR_CLEARANCE }}
           showsVerticalScrollIndicator={false}
         >
           {trips.map((trip, index) => (
@@ -170,23 +186,6 @@ export default function Index() {
             />
           ))}
         </ScrollView>
-
-        <Animated.View
-          entering={FadeInUp.delay(240).duration(600).easing(EASE)}
-          className="pb-3"
-        >
-          <ScalePressable
-            onPress={planNewTrip}
-            className="h-16 flex-row items-center justify-between rounded-full bg-primary pl-7 pr-2"
-          >
-            <Text className="font-sans-bold text-base tracking-wide text-primary-foreground">
-              Plan a new trip
-            </Text>
-            <View className="h-12 w-12 items-center justify-center rounded-full bg-primary-foreground/25">
-              <Plus size={20} weight="bold" color={colors.primaryForeground} />
-            </View>
-          </ScalePressable>
-        </Animated.View>
       </View>
     </SafeAreaView>
   );
