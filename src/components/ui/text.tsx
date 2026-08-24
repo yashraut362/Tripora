@@ -6,7 +6,7 @@ import { Platform, Text as RNText, type Role } from 'react-native';
 
 const textVariants = cva(
   cn(
-    'text-foreground text-base',
+    'text-foreground font-sans text-base',
     Platform.select({
       web: 'select-text',
     })
@@ -15,25 +15,19 @@ const textVariants = cva(
     variants: {
       variant: {
         default: '',
-        h1: cn(
-          'text-center text-4xl font-extrabold tracking-tight',
-          Platform.select({ web: 'scroll-m-20 text-balance' })
-        ),
-        h2: cn(
-          'border-border border-b pb-2 text-3xl font-semibold tracking-tight',
-          Platform.select({ web: 'scroll-m-20 first:mt-0' })
-        ),
-        h3: cn('text-2xl font-semibold tracking-tight', Platform.select({ web: 'scroll-m-20' })),
-        h4: cn('text-xl font-semibold tracking-tight', Platform.select({ web: 'scroll-m-20' })),
-        p: 'mt-3 leading-7 sm:mt-6',
-        blockquote: 'mt-4 border-l-2 pl-3 italic sm:mt-6 sm:pl-6',
-        code: cn(
-          'bg-muted relative rounded px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold'
-        ),
+        // Android can't synthesize weights on custom fonts,
+        // so weight lives in the font family, never in font-bold classes.
+        h1: 'font-sans-bold text-[34px] leading-[42px] tracking-tight',
+        h2: 'font-sans-bold text-2xl leading-8',
+        h3: 'font-sans-bold text-xl leading-7',
+        h4: 'font-sans-semibold text-lg',
+        p: 'mt-3 leading-7',
+        blockquote: 'mt-4 border-l-2 border-border pl-3 text-lg',
         lead: 'text-muted-foreground text-xl',
-        large: 'text-lg font-semibold',
-        small: 'text-sm font-medium leading-none',
-        muted: 'text-muted-foreground text-sm',
+        large: 'font-sans-semibold text-lg',
+        small: 'font-sans-medium text-sm leading-none',
+        muted: 'text-muted-foreground font-sans-medium text-sm leading-5',
+        eyebrow: 'text-muted-foreground font-sans-bold text-[11px] uppercase tracking-[3px]',
       },
     },
     defaultVariants: {
@@ -52,7 +46,6 @@ const ROLE: Partial<Record<TextVariant, Role>> = {
   h3: 'heading',
   h4: 'heading',
   blockquote: Platform.select({ web: 'blockquote' as Role }),
-  code: Platform.select({ web: 'code' as Role }),
 };
 
 const ARIA_LEVEL: Partial<Record<TextVariant, string>> = {

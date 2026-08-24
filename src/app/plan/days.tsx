@@ -1,43 +1,94 @@
-import Slider from "@react-native-community/slider";
 import { router } from "expo-router";
-import { Platform, useColorScheme, View } from "react-native";
+import { Minus, Plus } from "phosphor-react-native";
+import { View } from "react-native";
+import Animated, { FadeIn } from "react-native-reanimated";
+import { ScalePressable } from "@/components/scale-pressable";
 import { Text } from "@/components/ui/text";
-import { DaysHero } from "@/components/wizard/hero-days";
+import { SelectPill } from "@/components/wizard/select-pill";
+import { StepIllustration } from "@/components/wizard/step-illustration";
 import { WizardScreen } from "@/components/wizard/wizard-screen";
-import { THEME } from "@/lib/theme";
+import { useThemeColors } from "@/lib/theme";
+import { TRAVEL_IMAGES } from "@/lib/travel-images";
 import { MAX_DAYS, MIN_DAYS } from "@/lib/trip-data";
 import { useTripStore } from "@/stores/trip-store";
+import { cn } from "@/lib/utils";
+
+const DURATION_PRESETS = [
+  { label: "Weekend · 3", days: 3 },
+  { label: "One week · 7", days: 7 },
+  { label: "Two weeks · 14", days: 14 },
+];
 
 export default function DaysScreen() {
   const days = useTripStore((s) => s.days);
   const setDays = useTripStore((s) => s.setDays);
+  const colors = useThemeColors();
 
-  const colorScheme = useColorScheme() === "dark" ? "dark" : "light";
-  const theme = THEME[colorScheme];
+  const adjust = (delta: number) =>
+    setDays(Math.min(MAX_DAYS, Math.max(MIN_DAYS, days + delta)));
 
   return (
     <WizardScreen
       step={2}
-      title="How many days?"
-      subtitle="Drag the slider to set your trip length."
-      hero={<DaysHero days={days} />}
+      eyebrow="Duration"
+      title="How long?"
+      subtitle="You can always stretch it later."
       onNext={() => router.push("/plan/budget")}
     >
-      <View>
-        <Slider
-          style={{ width: "100%", height: 40 }}
-          minimumValue={MIN_DAYS}
-          maximumValue={MAX_DAYS}
-          step={1}
-          value={days}
-          onValueChange={setDays}
-          minimumTrackTintColor={theme.primary}
-          maximumTrackTintColor={theme.border}
-          thumbTintColor={Platform.OS === "android" ? theme.primary : undefined}
+      <View className="flex-1 items-center justify-center">
+        <StepIllustration
+          source={TRAVEL_IMAGES.suitcase}
+          size={150}
+          blobClass="bg-accent/80"
         />
-        <View className="mt-1 w-full flex-row justify-between">
-          <Text variant="muted">{MIN_DAYS} day</Text>
-          <Text variant="muted">{MAX_DAYS} days</Text>
+
+        <View className="mt-4 flex-row items-center gap-3">
+          <Animated.View key={days} entering={FadeIn.duration(200)}>
+            <Text className="font-sans-bold text-[64px] leading-[72px] text-foreground">
+              {days}
+            </Text>
+          </Animated.View>
+          <View className="rounded-full bg-card px-4 py-1.5">
+            <Text className="font-sans-semibold text-sm text-muted-foreground">
+              {days === 1 ? "day" : "days"}
+            </Text>
+          </View>
+        </View>
+
+        <View className="mt-5 flex-row gap-4">
+          <ScalePressable
+            onPress={() => adjust(-1)}
+            disabled={days <= MIN_DAYS}
+            hitSlop={6}
+            className={cn(
+              "h-14 w-14 items-center justify-center rounded-full bg-card",
+              days <= MIN_DAYS && "opacity-30",
+            )}
+          >
+            <Minus size={20} weight="bold" color={colors.foreground} />
+          </ScalePressable>
+          <ScalePressable
+            onPress={() => adjust(1)}
+            disabled={days >= MAX_DAYS}
+            hitSlop={6}
+            className={cn(
+              "h-14 w-14 items-center justify-center rounded-full bg-primary",
+              days >= MAX_DAYS && "opacity-30",
+            )}
+          >
+            <Plus size={20} weight="bold" color={colors.primaryForeground} />
+          </ScalePressable>
+        </View>
+
+        <View className="mt-6 flex-row flex-wrap justify-center gap-2">
+          {DURATION_PRESETS.map((preset) => (
+            <SelectPill
+              key={preset.days}
+              label={preset.label}
+              selected={days === preset.days}
+              onPress={() => setDays(preset.days)}
+            />
+          ))}
         </View>
       </View>
     </WizardScreen>

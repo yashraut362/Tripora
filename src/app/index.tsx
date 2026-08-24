@@ -1,60 +1,29 @@
+import { Image } from "expo-image";
 import { Redirect, router } from "expo-router";
-import {
-  CalendarDays,
-  Pencil,
-  Plus,
-  Trash2,
-  Wallet,
-  type LucideIcon,
-} from "lucide-react-native";
-import { Alert, Pressable, ScrollView, View } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import { PencilSimple, Plus, TrashSimple } from "phosphor-react-native";
+import { Alert, ScrollView, View } from "react-native";
+import Animated, { Easing, FadeInUp } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Button } from "@/components/ui/button";
-import { Icon } from "@/components/ui/icon";
+import { ScalePressable } from "@/components/scale-pressable";
 import { Text } from "@/components/ui/text";
-import { cn } from "@/lib/utils";
-import { ACTIVITIES } from "@/lib/trip-data";
+import { useThemeColors } from "@/lib/theme";
+import { TRAVEL_IMAGES } from "@/lib/travel-images";
 import { useTripStore, type Trip } from "@/stores/trip-store";
 
-const CHIP_EMOJIS = ["🌍", "🏝️", "🗻", "🌆", "🎒", "🗺️"];
-const CHIP_COLORS = [
-  "bg-primary/15",
-  "bg-secondary",
-  "bg-accent",
-  "bg-destructive/10",
-];
+const EASE = Easing.bezier(0.32, 0.72, 0, 1);
 
-function StatPill({ icon, label }: { icon: LucideIcon; label: string }) {
+function Stat({ value, label }: { value: string; label: string }) {
   return (
-    <View className="flex-row items-center gap-1.5 rounded-full bg-muted px-2.5 py-1">
-      <Icon as={icon} className="size-3.5 text-muted-foreground" />
-      <Text className="text-xs font-semibold text-muted-foreground">{label}</Text>
+    <View className="flex-1 items-center">
+      <Text className="font-sans-bold text-lg text-foreground">{value}</Text>
+      <Text className="mt-0.5 font-sans-medium text-xs text-muted-foreground">
+        {label}
+      </Text>
     </View>
   );
 }
 
-function RoundIconButton({
-  icon,
-  iconClass,
-  onPress,
-}: {
-  icon: LucideIcon;
-  iconClass: string;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      hitSlop={6}
-      className="h-9 w-9 items-center justify-center rounded-full bg-muted/70 active:bg-muted"
-    >
-      <Icon as={icon} className={cn("size-4", iconClass)} />
-    </Pressable>
-  );
-}
-
-function TripCard({
+function TripRow({
   trip,
   index,
   onEdit,
@@ -65,60 +34,46 @@ function TripCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const emojis = ACTIVITIES.filter((a) => trip.activities.includes(a.id)).map(
-    (a) => a.emoji,
-  );
+  const colors = useThemeColors();
+  const activityCount = trip.activities.length;
 
   return (
-    <Animated.View entering={FadeInDown.delay(100 + index * 80).duration(400)}>
-      <View className="mb-4 rounded-3xl border border-border/60 bg-card p-4 shadow-sm shadow-black/5">
-        <View className="flex-row items-center gap-3">
-          <View
-            className={cn(
-              "h-14 w-14 items-center justify-center rounded-2xl",
-              CHIP_COLORS[index % CHIP_COLORS.length],
-            )}
+    <Animated.View
+      entering={FadeInUp.delay(160 + index * 70)
+        .duration(600)
+        .easing(EASE)}
+    >
+      <View className="mb-3 flex-row items-center rounded-[24px] bg-card px-5 py-4">
+        <View className="flex-1 pr-3">
+          <Text
+            className="font-sans-bold text-lg text-foreground"
+            numberOfLines={1}
           >
-            <Text className="text-3xl">
-              {CHIP_EMOJIS[index % CHIP_EMOJIS.length]}
-            </Text>
-          </View>
-
-          <View className="flex-1">
-            <Text className="text-xl font-extrabold" numberOfLines={1}>
-              {trip.destination}
-            </Text>
-            <View className="mt-1.5 flex-row gap-2">
-              <StatPill
-                icon={CalendarDays}
-                label={`${trip.days} ${trip.days === 1 ? "day" : "days"}`}
-              />
-              <StatPill icon={Wallet} label={`$${(trip.budget ?? 0).toLocaleString()}`} />
-            </View>
-          </View>
-
-          <View className="gap-2">
-            <RoundIconButton icon={Pencil} iconClass="text-primary" onPress={onEdit} />
-            <RoundIconButton
-              icon={Trash2}
-              iconClass="text-destructive"
-              onPress={onDelete}
-            />
-          </View>
+            {trip.destination}
+          </Text>
+          <Text className="mt-1 font-sans-medium text-xs text-muted-foreground">
+            {trip.days} {trip.days === 1 ? "day" : "days"} · $
+            {(trip.budget ?? 0).toLocaleString()} · {activityCount}{" "}
+            {activityCount === 1 ? "activity" : "activities"}
+          </Text>
         </View>
 
-        {emojis.length > 0 ? (
-          <View className="mt-3 flex-row flex-wrap gap-2">
-            {emojis.map((emoji) => (
-              <View
-                key={emoji}
-                className="h-9 w-9 items-center justify-center rounded-full bg-muted/70"
-              >
-                <Text className="text-base">{emoji}</Text>
-              </View>
-            ))}
-          </View>
-        ) : null}
+        <View className="flex-row gap-2">
+          <ScalePressable
+            onPress={onEdit}
+            hitSlop={4}
+            className="h-10 w-10 items-center justify-center rounded-full bg-primary"
+          >
+            <PencilSimple size={15} weight="bold" color={colors.primaryForeground} />
+          </ScalePressable>
+          <ScalePressable
+            onPress={onDelete}
+            hitSlop={4}
+            className="h-10 w-10 items-center justify-center rounded-full bg-muted"
+          >
+            <TrashSimple size={15} weight="bold" color={colors.destructive} />
+          </ScalePressable>
+        </View>
       </View>
     </Animated.View>
   );
@@ -129,10 +84,14 @@ export default function Index() {
   const startNewTrip = useTripStore((s) => s.startNewTrip);
   const startEditTrip = useTripStore((s) => s.startEditTrip);
   const deleteTrip = useTripStore((s) => s.deleteTrip);
+  const colors = useThemeColors();
 
   if (trips.length === 0) {
     return <Redirect href="/plan/destination" />;
   }
+
+  const totalDays = trips.reduce((sum, trip) => sum + trip.days, 0);
+  const totalBudget = trips.reduce((sum, trip) => sum + (trip.budget ?? 0), 0);
 
   const planNewTrip = () => {
     startNewTrip();
@@ -153,36 +112,56 @@ export default function Index() {
 
   return (
     <SafeAreaView className="flex-1 overflow-hidden bg-background">
-      {/* Soft decorative blobs, matching the wizard heroes */}
+      {/* Soft decorative blobs */}
       <View
         pointerEvents="none"
-        className="absolute -right-16 -top-10 h-48 w-48 rounded-full bg-accent/60"
+        className="absolute -right-16 -top-14 h-44 w-44 rounded-full bg-secondary/70"
       />
       <View
         pointerEvents="none"
-        className="absolute -left-20 bottom-24 h-56 w-56 rounded-full bg-secondary/50"
+        className="absolute -left-16 bottom-28 h-40 w-40 rounded-full bg-accent/60"
       />
 
-      <View className="flex-1 px-6 pt-4">
-        <Animated.View entering={FadeInDown.duration(400)}>
-          <Text className="text-xs font-bold uppercase tracking-[3px] text-primary">
-            Tripora ✈️
+      <View className="flex-1 px-6 pt-6">
+        <Animated.View entering={FadeInUp.duration(600).easing(EASE)}>
+          <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center gap-3">
+              <View className="h-1.5 w-8 rounded-full bg-primary" />
+              <Text variant="eyebrow">Tripora</Text>
+            </View>
+            <Image
+              source={TRAVEL_IMAGES.airplane}
+              style={{ width: 44, height: 44 }}
+              contentFit="contain"
+            />
+          </View>
+          <Text variant="h1" className="mt-2">
+            My Trips
           </Text>
-          <Text variant="h1" className="mt-1 text-left font-extrabold">
-            Your trips
-          </Text>
-          <Text variant="muted" className="mt-1">
+          <Text className="mt-1 font-sans-medium text-sm text-muted-foreground">
             {trips.length} {trips.length === 1 ? "adventure" : "adventures"} planned
           </Text>
         </Animated.View>
 
+        {/* Summary strip */}
+        <Animated.View
+          entering={FadeInUp.delay(80).duration(600).easing(EASE)}
+          className="mt-5 flex-row items-center rounded-[24px] bg-card py-4"
+        >
+          <Stat value={String(trips.length)} label="Trips" />
+          <View className="h-8 w-px bg-border" />
+          <Stat value={String(totalDays)} label="Days" />
+          <View className="h-8 w-px bg-border" />
+          <Stat value={`$${totalBudget.toLocaleString()}`} label="Budget" />
+        </Animated.View>
+
         <ScrollView
-          className="mt-6 flex-1"
+          className="mt-5 flex-1"
           contentContainerClassName="pb-4"
           showsVerticalScrollIndicator={false}
         >
           {trips.map((trip, index) => (
-            <TripCard
+            <TripRow
               key={trip.id}
               trip={trip}
               index={index}
@@ -192,11 +171,21 @@ export default function Index() {
           ))}
         </ScrollView>
 
-        <Animated.View entering={FadeInDown.delay(200).duration(400)} className="pb-4">
-          <Button size="lg" className="h-14 w-full rounded-full" onPress={planNewTrip}>
-            <Icon as={Plus} className="size-5 text-primary-foreground" />
-            <Text className="text-lg font-bold">Plan a new trip</Text>
-          </Button>
+        <Animated.View
+          entering={FadeInUp.delay(240).duration(600).easing(EASE)}
+          className="pb-3"
+        >
+          <ScalePressable
+            onPress={planNewTrip}
+            className="h-16 flex-row items-center justify-between rounded-full bg-primary pl-7 pr-2"
+          >
+            <Text className="font-sans-bold text-base tracking-wide text-primary-foreground">
+              Plan a new trip
+            </Text>
+            <View className="h-12 w-12 items-center justify-center rounded-full bg-primary-foreground/25">
+              <Plus size={20} weight="bold" color={colors.primaryForeground} />
+            </View>
+          </ScalePressable>
         </Animated.View>
       </View>
     </SafeAreaView>

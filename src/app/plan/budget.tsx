@@ -1,10 +1,11 @@
 import { router } from "expo-router";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
-import { BudgetHero } from "@/components/wizard/hero-budget";
+import { SelectPill } from "@/components/wizard/select-pill";
+import { StepIllustration } from "@/components/wizard/step-illustration";
 import { WizardScreen } from "@/components/wizard/wizard-screen";
-import { cn } from "@/lib/utils";
+import { TRAVEL_IMAGES } from "@/lib/travel-images";
 import { BUDGET_PRESETS } from "@/lib/trip-data";
 import { useTripStore } from "@/stores/trip-store";
 
@@ -20,54 +21,38 @@ export default function BudgetScreen() {
   return (
     <WizardScreen
       step={3}
-      title="What's your budget?"
-      subtitle="Total trip budget in US dollars."
-      hero={<BudgetHero />}
+      eyebrow="Budget"
+      title="And the budget?"
+      subtitle="Total for the whole trip, in US dollars — it keeps the plan afloat."
       nextDisabled={budget === null || budget <= 0}
       onNext={() => router.push("/plan/activities")}
       avoidKeyboard
     >
       <View>
-        <View className="relative">
-          <View className="absolute bottom-0 left-4 top-0 z-10 justify-center">
-            <Text className="text-lg font-bold text-muted-foreground">$</Text>
+        <StepIllustration source={TRAVEL_IMAGES.lifebuoy} size={150} />
+
+        <View className="mt-6 flex-row items-center overflow-hidden rounded-full bg-card">
+          <View className="ml-3 h-9 w-9 items-center justify-center rounded-full bg-primary/15">
+            <Text className="font-sans-bold text-base text-primary">$</Text>
           </View>
           <Input
             value={budget !== null ? String(budget) : ""}
             onChangeText={handleChange}
             placeholder="0"
             keyboardType="number-pad"
-            className="h-14 pl-9 text-lg"
-            autoFocus
+            className="flex-1 bg-transparent pl-3"
           />
         </View>
 
-        <View className="mt-4 flex-row flex-wrap gap-2">
-          {BUDGET_PRESETS.map((preset) => {
-            const isSelected = budget === preset;
-            return (
-              <Pressable
-                key={preset}
-                onPress={() => setBudget(preset)}
-                hitSlop={4}
-                className={cn(
-                  "h-11 items-center justify-center rounded-full border-2 px-5 active:opacity-80",
-                  isSelected
-                    ? "border-primary bg-primary"
-                    : "border-border bg-muted/50 active:bg-muted",
-                )}
-              >
-                <Text
-                  className={cn(
-                    "font-bold",
-                    isSelected ? "text-primary-foreground" : "text-foreground",
-                  )}
-                >
-                  ${preset.toLocaleString()}
-                </Text>
-              </Pressable>
-            );
-          })}
+        <View className="mt-5 flex-row flex-wrap gap-2">
+          {BUDGET_PRESETS.map((preset) => (
+            <SelectPill
+              key={preset}
+              label={`$${preset.toLocaleString()}`}
+              selected={budget === preset}
+              onPress={() => setBudget(preset)}
+            />
+          ))}
         </View>
       </View>
     </WizardScreen>

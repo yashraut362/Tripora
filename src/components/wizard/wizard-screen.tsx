@@ -1,16 +1,22 @@
+import { ArrowRight } from "phosphor-react-native";
 import { KeyboardAvoidingView, Platform, View } from "react-native";
-import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import Animated, { Easing, FadeInUp } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Button } from "@/components/ui/button";
+import { ScalePressable } from "@/components/scale-pressable";
 import { Text } from "@/components/ui/text";
-import { WIZARD_STEPS } from "@/lib/trip-data";
+import { useThemeColors } from "@/lib/theme";
+import { cn } from "@/lib/utils";
+
+const EASE = Easing.bezier(0.32, 0.72, 0, 1);
+
+export const enterFrom = (delay: number) =>
+  FadeInUp.delay(delay).duration(650).easing(EASE);
 
 interface WizardScreenProps {
   step: number; // 1-based
+  eyebrow: string;
   title: string;
   subtitle?: string;
-  /** Animated illustration filling the area above the form sheet */
-  hero: React.ReactNode;
   nextLabel?: string;
   nextDisabled?: boolean;
   onNext: () => void;
@@ -20,52 +26,68 @@ interface WizardScreenProps {
 
 export function WizardScreen({
   step,
+  eyebrow,
   title,
   subtitle,
-  hero,
-  nextLabel = "Next",
+  nextLabel = "Continue",
   nextDisabled = false,
   onNext,
   avoidKeyboard = false,
   children,
 }: WizardScreenProps) {
   const insets = useSafeAreaInsets();
+  const colors = useThemeColors();
 
   const content = (
-    <View className="flex-1">
-      {/* Illustration stage — shrinks when the keyboard opens */}
-      <View className="flex-1 overflow-hidden">{hero}</View>
+    <View className="flex-1 overflow-hidden bg-background px-6">
+      {/* Soft decorative blobs */}
+      <View
+        pointerEvents="none"
+        className="absolute -right-16 -top-14 h-44 w-44 rounded-full bg-secondary/70"
+      />
+      <View
+        pointerEvents="none"
+        className="absolute right-16 top-16 h-14 w-14 rounded-full bg-primary/15"
+      />
 
-      {/* Form sheet — sized to content so controls never get squeezed */}
+      <Animated.View entering={enterFrom(0)} className="mt-8">
+        <View className="flex-row items-center gap-3">
+          <View className="h-1.5 w-8 rounded-full bg-primary" />
+          <Text variant="eyebrow">{eyebrow}</Text>
+        </View>
+        <Text variant="h1" className="mt-4">
+          {title}
+        </Text>
+        {subtitle ? (
+          <Text className="mt-3 font-sans text-base leading-6 text-muted-foreground">
+            {subtitle}
+          </Text>
+        ) : null}
+      </Animated.View>
+
+      <Animated.View entering={enterFrom(120)} className="mt-10 flex-1">
+        {children}
+      </Animated.View>
+
       <Animated.View
-        entering={FadeInUp.duration(400)}
-        className="rounded-t-[32px] border-t border-border/40 bg-card px-6 pt-7 shadow-lg shadow-black/10"
-        style={{ paddingBottom: insets.bottom + 16 }}
+        entering={enterFrom(220)}
+        style={{ paddingBottom: insets.bottom + 12 }}
       >
-        <Animated.View entering={FadeInDown.delay(100).duration(400)}>
-          <Text className="text-xs font-bold uppercase tracking-[3px] text-primary">
-            Step {step} of {WIZARD_STEPS.length}
-          </Text>
-          <Text variant="h2" className="mt-2 border-0 pb-0 font-extrabold">
-            {title}
-          </Text>
-          {subtitle ? (
-            <Text variant="muted" className="mt-1">
-              {subtitle}
-            </Text>
-          ) : null}
-        </Animated.View>
-
-        <View className="mb-6 mt-5">{children}</View>
-
-        <Button
-          size="lg"
-          className="h-14 w-full rounded-full"
+        <ScalePressable
           disabled={nextDisabled}
           onPress={onNext}
+          className={cn(
+            "h-16 flex-row items-center justify-between rounded-full bg-primary pl-7 pr-2",
+            nextDisabled && "opacity-30",
+          )}
         >
-          <Text className="text-lg font-bold">{nextLabel}</Text>
-        </Button>
+          <Text className="font-sans-bold text-base tracking-wide text-primary-foreground">
+            {nextLabel}
+          </Text>
+          <View className="h-12 w-12 items-center justify-center rounded-full bg-primary-foreground/25">
+            <ArrowRight size={20} weight="bold" color={colors.primaryForeground} />
+          </View>
+        </ScalePressable>
       </Animated.View>
     </View>
   );

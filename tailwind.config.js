@@ -7,6 +7,14 @@ module.exports = {
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
+      fontFamily: {
+        // Friendly rounded type: Nunito across the app.
+        // Each weight is its own family name on native — never combine with font-bold.
+        sans: ["Nunito_400Regular"],
+        "sans-medium": ["Nunito_600SemiBold"],
+        "sans-semibold": ["Nunito_700Bold"],
+        "sans-bold": ["Nunito_800ExtraBold"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
