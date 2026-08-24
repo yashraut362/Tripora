@@ -15,25 +15,16 @@ const EASE = Easing.bezier(0.32, 0.72, 0, 1);
 // Keep the last list row clear of the floating tab bar (64 tall + 12 offset + breathing room).
 const TAB_BAR_CLEARANCE = 88;
 
-function Stat({ value, label }: { value: string; label: string }) {
-  return (
-    <View className="flex-1 items-center">
-      <Text className="font-sans-bold text-lg text-foreground">{value}</Text>
-      <Text className="mt-0.5 font-sans-medium text-xs text-muted-foreground">
-        {label}
-      </Text>
-    </View>
-  );
-}
-
 function TripRow({
   trip,
   index,
+  onOpen,
   onEdit,
   onDelete,
 }: {
   trip: Trip;
   index: number;
+  onOpen: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -48,7 +39,11 @@ function TripRow({
         .duration(600)
         .easing(EASE)}
     >
-      <View className="mb-3 rounded-[24px] bg-card px-5 py-4">
+      <ScalePressable
+        onPress={onOpen}
+        scaleTo={0.98}
+        className="mb-3 rounded-[24px] bg-card px-5 py-4"
+      >
         <View className="flex-row items-center">
           <View className="flex-1 pr-3">
             <Text
@@ -95,7 +90,7 @@ function TripRow({
             ))}
           </View>
         ) : null}
-      </View>
+      </ScalePressable>
     </Animated.View>
   );
 }
@@ -118,9 +113,6 @@ export default function Index() {
     return <Redirect href="/plan/destination" />;
   }
 
-  const totalDays = trips.reduce((sum, trip) => sum + trip.days, 0);
-  const totalBudget = trips.reduce((sum, trip) => sum + (trip.budget ?? 0), 0);
-
   const planNewTrip = () => {
     startNewTrip();
     router.push("/plan/destination");
@@ -129,6 +121,11 @@ export default function Index() {
   const editTrip = (id: string) => {
     startEditTrip(id);
     router.push("/plan/destination");
+  };
+
+  const openTrip = (id: string) => {
+    // Cast needed until the dev server regenerates typed routes with /trip/[id].
+    router.push({ pathname: "/trip/[id]", params: { id } } as never);
   };
 
   const confirmDelete = (trip: Trip) => {
@@ -188,18 +185,6 @@ export default function Index() {
           </Text>
         </Animated.View>
 
-        {/* Summary strip */}
-        <Animated.View
-          entering={FadeInUp.delay(80).duration(600).easing(EASE)}
-          className="mt-5 flex-row items-center rounded-[24px] bg-card py-4"
-        >
-          <Stat value={String(trips.length)} label="Trips" />
-          <View className="h-8 w-px bg-border" />
-          <Stat value={String(totalDays)} label="Days" />
-          <View className="h-8 w-px bg-border" />
-          <Stat value={`$${totalBudget.toLocaleString()}`} label="Budget" />
-        </Animated.View>
-
         <ScrollView
           className="mt-5 flex-1"
           contentContainerStyle={{ paddingBottom: TAB_BAR_CLEARANCE }}
@@ -210,6 +195,7 @@ export default function Index() {
               key={trip.id}
               trip={trip}
               index={index}
+              onOpen={() => openTrip(trip.id)}
               onEdit={() => editTrip(trip.id)}
               onDelete={() => confirmDelete(trip)}
             />
