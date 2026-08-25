@@ -14,11 +14,8 @@ export interface Trip extends TripSelections {
 }
 
 interface TripStore extends TripSelections {
-  // The flat selection fields above act as the wizard's draft.
   trips: Trip[];
   editingTripId: string | null;
-  // True once saved trips have been loaded from disk — gate the
-  // "no trips -> wizard" redirect on this so it doesn't fire early.
   hasHydrated: boolean;
   setDestination: (destination: string) => void;
   setDays: (days: number) => void;
@@ -85,7 +82,6 @@ export const useTripStore = create<TripStore>()(
   deleteTrip: (id) =>
     set((s) => {
       const trips = s.trips.filter((t) => t.id !== id);
-      // Last trip gone -> home redirects into the wizard; hand it a clean draft.
       return trips.length === 0
         ? { trips, ...emptyDraft, editingTripId: null }
         : { trips };
@@ -94,7 +90,6 @@ export const useTripStore = create<TripStore>()(
     {
       name: "tripora-trips",
       storage: createJSONStorage(() => AsyncStorage),
-      // Persist only the saved trips; the wizard draft stays ephemeral.
       partialize: (s) => ({ trips: s.trips }),
       onRehydrateStorage: () => () => {
         useTripStore.setState({ hasHydrated: true });

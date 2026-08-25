@@ -12,8 +12,6 @@ const TAB_META: Record<string, { label: string; icon: Icon }> = {
   map: { label: "Map", icon: MapTrifold },
 };
 
-// expo-router vendors its own bottom-tabs types, so derive the tabBar
-// props from the Tabs component instead of @react-navigation/bottom-tabs.
 type TabBarProps = Parameters<
   NonNullable<ComponentProps<typeof Tabs>["tabBar"]>
 >[0];

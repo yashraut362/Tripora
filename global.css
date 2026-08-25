@@ -2,9 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Tripora palette — drawn from the 3D travel illustration set:
-   cream, warm charcoal ink, coral, powder blue, soft sage, butter yellow.
-   Keep in sync with src/lib/theme.ts */
 @layer base {
   :root {
     --background: 45 42% 95%;

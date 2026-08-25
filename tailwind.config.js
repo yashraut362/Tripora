@@ -1,6 +1,5 @@
 const { hairlineWidth } = require("nativewind/theme");
 
-/** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: "class",
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
@@ -8,8 +7,6 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        // Friendly rounded type: Nunito across the app.
-        // Each weight is its own family name on native — never combine with font-bold.
         sans: ["Nunito_400Regular"],
         "sans-medium": ["Nunito_600SemiBold"],
         "sans-semibold": ["Nunito_700Bold"],

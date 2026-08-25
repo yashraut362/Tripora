@@ -58,7 +58,6 @@ export function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
     const timer = setTimeout(() => finish(500), EXIT_AT);
     finishRef.current = () => finish(300);
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -72,7 +71,6 @@ export function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
         className="flex-1 items-center justify-center bg-background"
         onPress={() => finishRef.current()}
       >
-        {/* Plane on a soft powder-blue cloud of a blob */}
         <Animated.View
           entering={ZoomIn.springify().damping(14).stiffness(120)}
           className="items-center justify-center"
@@ -90,7 +88,6 @@ export function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
           </Animated.View>
         </Animated.View>
 
-        {/* Wordmark — letters pop in, coral full stop lands last */}
         <View className="mt-6 flex-row">
           {LETTERS.map((letter, index) => (
             <Animated.Text

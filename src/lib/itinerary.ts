@@ -4,7 +4,6 @@ export interface ItineraryStop {
   slot: "Morning" | "Afternoon" | "Evening";
   title: string;
   detail: string;
-  /** Search text for Google Maps; the destination gets appended. */
   mapsQuery: string;
 }
 
@@ -19,7 +18,6 @@ interface DayTemplate {
   stops: ItineraryStop[];
 }
 
-/** Universal Google Maps link — opens the native app with a pin when installed. */
 export function mapsUrl(query: string, destination: string) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
     `${query} ${destination}`,
@@ -74,7 +72,6 @@ const FAREWELL: DayTemplate = {
   ],
 };
 
-// One themed day per activity the user can pick in the wizard.
 const ACTIVITY_TEMPLATES: Record<string, DayTemplate> = {
   beach: {
     theme: "Beach day",
@@ -262,7 +259,6 @@ const ACTIVITY_TEMPLATES: Record<string, DayTemplate> = {
   },
 };
 
-// Used for middle days once the selected activities have all had a day.
 const GENERIC_TEMPLATES: DayTemplate[] = [
   {
     theme: "Local life day",
@@ -312,12 +308,8 @@ const GENERIC_TEMPLATES: DayTemplate[] = [
   },
 ];
 
-/** Deterministic day-by-day plan: arrival first, farewell last,
- *  the middle themed by the trip's own selected activities. */
 export function buildItinerary(trip: Trip): ItineraryDay[] {
   const days: ItineraryDay[] = [];
-  // Middle days walk through the trip's own activities first, then the
-  // generic fillers, and cycle for long trips.
   const middlePool = [
     ...trip.activities
       .map((id) => ACTIVITY_TEMPLATES[id])
@@ -346,7 +338,6 @@ const INTROS = [
   "The kind of trip you plan loosely and remember forever.",
 ];
 
-/** Short static description line, stable per trip. */
 export function buildTripIntro(trip: Trip) {
   let hash = 0;
   for (const char of trip.id) hash = (hash * 31 + char.charCodeAt(0)) % 997;

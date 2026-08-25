@@ -15,8 +15,6 @@ const textVariants = cva(
     variants: {
       variant: {
         default: '',
-        // Android can't synthesize weights on custom fonts,
-        // so weight lives in the font family, never in font-bold classes.
         h1: 'font-sans-bold text-[34px] leading-[42px] tracking-tight',
         h2: 'font-sans-bold text-2xl leading-8',
         h3: 'font-sans-bold text-xl leading-7',

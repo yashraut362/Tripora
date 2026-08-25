@@ -1,6 +1,5 @@
 import type { ImageSourcePropType } from "react-native";
 
-/** Soft 3D travel illustrations (assets/images/travel, bundled from resized copies in opt/). */
 export const TRAVEL_IMAGES = {
   airplane: require("../../assets/images/travel/opt/airplane-with-folded-map.png"),
   beachBall: require("../../assets/images/travel/opt/beach-ball-surfboard.png"),

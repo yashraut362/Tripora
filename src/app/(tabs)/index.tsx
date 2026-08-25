@@ -1,18 +1,18 @@
 import { Image } from "expo-image";
 import { Redirect, router } from "expo-router";
-import { PencilSimple, Plus, TrashSimple } from "phosphor-react-native";
+import { PencilSimple, Plus, SignOut, TrashSimple } from "phosphor-react-native";
 import { Alert, ScrollView, View } from "react-native";
 import Animated, { Easing, FadeInUp } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScalePressable } from "@/components/scale-pressable";
 import { Text } from "@/components/ui/text";
+import { authClient } from "@/lib/auth-client";
 import { useThemeColors } from "@/lib/theme";
 import { TRAVEL_IMAGES } from "@/lib/travel-images";
 import { ACTIVITIES } from "@/lib/trip-data";
 import { useTripStore, type Trip } from "@/stores/trip-store";
 
 const EASE = Easing.bezier(0.32, 0.72, 0, 1);
-// Keep the last list row clear of the floating tab bar (64 tall + 12 offset + breathing room).
 const TAB_BAR_CLEARANCE = 88;
 
 function TripRow({
@@ -102,9 +102,9 @@ export default function Index() {
   const startEditTrip = useTripStore((s) => s.startEditTrip);
   const deleteTrip = useTripStore((s) => s.deleteTrip);
   const colors = useThemeColors();
+  const { data: session } = authClient.useSession();
+  const firstName = session?.user?.name?.split(" ")[0];
 
-  // Wait for saved trips to load from disk before deciding where to land —
-  // the animated splash is still covering the screen at this point.
   if (!hasHydrated) {
     return null;
   }
@@ -124,8 +124,18 @@ export default function Index() {
   };
 
   const openTrip = (id: string) => {
-    // Cast needed until the dev server regenerates typed routes with /trip/[id].
     router.push({ pathname: "/trip/[id]", params: { id } } as never);
+  };
+
+  const confirmSignOut = () => {
+    Alert.alert("Sign out?", "You can sign back in anytime.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Sign out",
+        style: "destructive",
+        onPress: () => void authClient.signOut(),
+      },
+    ]);
   };
 
   const confirmDelete = (trip: Trip) => {
@@ -137,7 +147,6 @@ export default function Index() {
 
   return (
     <SafeAreaView className="flex-1 overflow-hidden bg-background">
-      {/* Soft decorative blobs */}
       <View
         pointerEvents="none"
         className="absolute -right-16 -top-14 h-44 w-44 rounded-full bg-secondary/70"
@@ -154,11 +163,20 @@ export default function Index() {
               <View className="h-1.5 w-8 rounded-full bg-primary" />
               <Text variant="eyebrow">Tripora</Text>
             </View>
-            <Image
-              source={TRAVEL_IMAGES.airplane}
-              style={{ width: 44, height: 44 }}
-              contentFit="contain"
-            />
+            <View className="flex-row items-center gap-2">
+              <Image
+                source={TRAVEL_IMAGES.airplane}
+                style={{ width: 44, height: 44 }}
+                contentFit="contain"
+              />
+              <ScalePressable
+                onPress={confirmSignOut}
+                hitSlop={6}
+                className="h-10 w-10 items-center justify-center rounded-full bg-card"
+              >
+                <SignOut size={16} weight="bold" color={colors.mutedForeground} />
+              </ScalePressable>
+            </View>
           </View>
           <View className="mt-2 flex-row items-center justify-between">
             <Text variant="h1">My Trips</Text>
@@ -181,6 +199,7 @@ export default function Index() {
             </ScalePressable>
           </View>
           <Text className="mt-1 font-sans-medium text-sm text-muted-foreground">
+            {firstName ? `Hey ${firstName} — ` : ""}
             {trips.length} {trips.length === 1 ? "adventure" : "adventures"} planned
           </Text>
         </Animated.View>

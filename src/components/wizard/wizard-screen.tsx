@@ -13,7 +13,7 @@ export const enterFrom = (delay: number) =>
   FadeInUp.delay(delay).duration(650).easing(EASE);
 
 interface WizardScreenProps {
-  step: number; // 1-based
+  step: number;
   eyebrow: string;
   title: string;
   subtitle?: string;
@@ -40,7 +40,6 @@ export function WizardScreen({
 
   const content = (
     <View className="flex-1 overflow-hidden bg-background px-6">
-      {/* Soft decorative blobs */}
       <View
         pointerEvents="none"
         className="absolute -right-16 -top-14 h-44 w-44 rounded-full bg-secondary/70"

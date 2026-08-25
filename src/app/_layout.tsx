@@ -12,6 +12,7 @@ import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import { useColorScheme } from "react-native";
 import { AnimatedSplash } from "@/components/animated-splash";
+import { authClient } from "@/lib/auth-client";
 import { NAV_THEME } from "@/lib/theme";
 import "../../global.css";
 
@@ -20,6 +21,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 export default function RootLayout() {
   const colorScheme = useColorScheme() === "dark" ? "dark" : "light";
   const [splashVisible, setSplashVisible] = useState(true);
+  const { data: session } = authClient.useSession();
   const [fontsLoaded, fontError] = useFonts({
     Nunito_400Regular,
     Nunito_600SemiBold,
@@ -27,7 +29,6 @@ export default function RootLayout() {
     Nunito_800ExtraBold,
   });
 
-  // Native splash stays up until fonts resolve; the animated splash takes over from there.
   if (!fontsLoaded && !fontError) {
     return null;
   }
@@ -35,7 +36,16 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={NAV_THEME[colorScheme]}>
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
-      <Stack screenOptions={{ headerShown: false }} />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Protected guard={!!session}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="plan" />
+          <Stack.Screen name="trip/[id]" />
+        </Stack.Protected>
+        <Stack.Protected guard={!session}>
+          <Stack.Screen name="sign-in" />
+        </Stack.Protected>
+      </Stack>
       {splashVisible && (
         <AnimatedSplash onFinish={() => setSplashVisible(false)} />
       )}

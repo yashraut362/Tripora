@@ -71,7 +71,6 @@ function DaySection({
         </Text>
       </View>
 
-      {/* Stops hang off a left rail */}
       <View className="ml-4 mt-3 border-l border-border pl-4">
         {itineraryDay.stops.map((stop) => (
           <View key={stop.slot} className="relative mb-3">
@@ -154,7 +153,6 @@ export default function TripDetailScreen() {
         contentContainerStyle={{ paddingBottom: 32 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Hero */}
         <Animated.View entering={FadeInUp.duration(600).easing(EASE)}>
           <StepIllustration source={artwork} size={150} />
           <View className="mt-2 flex-row items-center gap-3">
@@ -169,7 +167,6 @@ export default function TripDetailScreen() {
           </Text>
         </Animated.View>
 
-        {/* Trip facts */}
         <Animated.View
           entering={FadeInUp.delay(80).duration(600).easing(EASE)}
           className="mt-5 flex-row items-center rounded-[24px] bg-card py-4"
@@ -202,7 +199,6 @@ export default function TripDetailScreen() {
           </Animated.View>
         ) : null}
 
-        {/* Day-by-day timeline */}
         <Animated.View
           entering={FadeInUp.delay(200).duration(600).easing(EASE)}
           className="mb-4 mt-7 flex-row items-center gap-3"

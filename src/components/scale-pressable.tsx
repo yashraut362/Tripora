@@ -7,16 +7,10 @@ import Animated, {
 
 interface ScalePressableProps extends Omit<PressableProps, "children"> {
   className?: string;
-  /** Scale applied while pressed. */
   scaleTo?: number;
   children?: React.ReactNode;
 }
 
-/**
- * Pressable with spring press physics — the surface settles to `scaleTo`
- * on touch-down and springs back on release. Style the inner surface via
- * `className`; the outer Pressable stays layout-neutral.
- */
 export function ScalePressable({
   className,
   scaleTo = 0.97,

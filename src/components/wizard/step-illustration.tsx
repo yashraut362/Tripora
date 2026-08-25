@@ -6,11 +6,9 @@ import { cn } from "@/lib/utils";
 interface StepIllustrationProps {
   source: ImageSourcePropType;
   size?: number;
-  /** Pastel blob behind the illustration. */
   blobClass?: string;
 }
 
-/** A travel illustration floating on a soft pastel blob. */
 export function StepIllustration({
   source,
   size = 160,

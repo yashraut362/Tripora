@@ -4,8 +4,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "@/components/ui/text";
 import { useThemeColors } from "@/lib/theme";
 
-// Leaflet + OpenStreetMap: fully interactive and needs no API key, so it
-// works in Expo Go (Google Maps does not — Expo Go's bundled key is dead).
 const MAP_HTML = `<!DOCTYPE html>
 <html>
 <head>
@@ -30,7 +28,6 @@ const MAP_HTML = `<!DOCTYPE html>
       attribution: '&copy; OpenStreetMap contributors',
     }).addTo(map);
 
-    // Test pin: Mumbai — coral dot with a soft halo, matching the app's primary color.
     L.circleMarker([19.076, 72.8777], {
       radius: 14, color: '#E17A60', weight: 2, opacity: 0.35, fillColor: '#E17A60', fillOpacity: 0.15,
     }).addTo(map);
@@ -57,7 +54,6 @@ export default function MapScreen() {
         bounces={false}
       />
 
-      {/* Floating title chip */}
       <View
         pointerEvents="none"
         style={{ position: "absolute", top: insets.top + 10, left: 24 }}

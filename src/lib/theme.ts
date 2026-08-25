@@ -5,7 +5,6 @@ import {
 } from "expo-router/react-navigation";
 import { useColorScheme } from "react-native";
 
-// Tripora palette from the 3D travel illustration set — keep in sync with global.css
 export const THEME = {
   light: {
     background: "hsl(45 42% 95%)",
@@ -51,7 +50,6 @@ export const THEME = {
   },
 };
 
-/** Resolved theme colors for the active color scheme — for props that can't take a className (icons, native tints). */
 export function useThemeColors() {
   const scheme = useColorScheme();
   return THEME[scheme === "dark" ? "dark" : "light"];

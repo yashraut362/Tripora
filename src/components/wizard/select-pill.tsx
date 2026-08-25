@@ -8,7 +8,6 @@ interface SelectPillProps {
   onPress: () => void;
 }
 
-/** Friendly pill — fills with dark ink when selected, like a country chip. */
 export function SelectPill({ label, selected, onPress }: SelectPillProps) {
   return (
     <ScalePressable
