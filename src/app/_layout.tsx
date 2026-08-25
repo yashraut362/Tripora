@@ -12,7 +12,7 @@ import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import { useColorScheme } from "react-native";
 import { AnimatedSplash } from "@/components/animated-splash";
-import { authClient } from "@/lib/auth-client";
+import { authClient } from "@/lib/api";
 import { NAV_THEME } from "@/lib/theme";
 import "../../global.css";
 

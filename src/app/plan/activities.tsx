@@ -1,7 +1,8 @@
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { Check } from "phosphor-react-native";
-import { ScrollView, View } from "react-native";
+import { useState } from "react";
+import { Alert, ScrollView, View } from "react-native";
 import { ScalePressable } from "@/components/scale-pressable";
 import { Text } from "@/components/ui/text";
 import { WizardScreen } from "@/components/wizard/wizard-screen";
@@ -16,6 +17,7 @@ export default function ActivitiesScreen() {
   const saveTrip = useTripStore((s) => s.saveTrip);
   const editing = useTripStore((s) => s.editingTripId !== null);
   const colors = useThemeColors();
+  const [saving, setSaving] = useState(false);
 
   const toggle = (id: string) =>
     setActivities(
@@ -25,8 +27,13 @@ export default function ActivitiesScreen() {
     );
 
   const finish = () => {
-    saveTrip();
-    router.dismissTo("/");
+    setSaving(true);
+    saveTrip()
+      .then(() => router.dismissTo("/"))
+      .catch(() =>
+        Alert.alert("Couldn't save trip", "Check your connection and try again."),
+      )
+      .finally(() => setSaving(false));
   };
 
   return (
@@ -35,8 +42,8 @@ export default function ActivitiesScreen() {
       eyebrow="Activities"
       title="What are you into?"
       subtitle="Pick as many as you like."
-      nextLabel={editing ? "Save changes" : "Finish"}
-      nextDisabled={activities.length === 0}
+      nextLabel={saving ? "Saving…" : editing ? "Save changes" : "Finish"}
+      nextDisabled={activities.length === 0 || saving}
       onNext={finish}
     >
       <ScrollView

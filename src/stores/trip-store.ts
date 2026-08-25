@@ -1,6 +1,5 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
+import { api } from "@/lib/api";
 
 export interface TripSelections {
   destination: string;
@@ -15,16 +14,18 @@ export interface Trip extends TripSelections {
 
 interface TripStore extends TripSelections {
   trips: Trip[];
+  tripsLoaded: boolean;
   editingTripId: string | null;
-  hasHydrated: boolean;
   setDestination: (destination: string) => void;
   setDays: (days: number) => void;
   setBudget: (budget: number | null) => void;
   setActivities: (activities: string[]) => void;
   startNewTrip: () => void;
   startEditTrip: (id: string) => void;
-  saveTrip: () => void;
-  deleteTrip: (id: string) => void;
+  loadTrips: () => Promise<void>;
+  saveTrip: () => Promise<void>;
+  deleteTrip: (id: string) => Promise<void>;
+  reset: () => void;
 }
 
 const emptyDraft: TripSelections = {
@@ -34,16 +35,11 @@ const emptyDraft: TripSelections = {
   activities: [],
 };
 
-const newTripId = () =>
-  Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-
-export const useTripStore = create<TripStore>()(
-  persist(
-    (set) => ({
+export const useTripStore = create<TripStore>()((set, get) => ({
   ...emptyDraft,
   trips: [],
+  tripsLoaded: false,
   editingTripId: null,
-  hasHydrated: false,
   setDestination: (destination) => set({ destination }),
   setDays: (days) => set({ days }),
   setBudget: (budget) => set({ budget }),
@@ -61,39 +57,41 @@ export const useTripStore = create<TripStore>()(
         editingTripId: id,
       };
     }),
-  saveTrip: () =>
-    set((s) => {
-      const selections: TripSelections = {
-        destination: s.destination.trim(),
-        days: s.days,
-        budget: s.budget,
-        activities: s.activities,
-      };
-      if (s.editingTripId) {
-        return {
-          trips: s.trips.map((t) =>
-            t.id === s.editingTripId ? { ...t, ...selections } : t,
-          ),
-          editingTripId: null,
-        };
-      }
-      return { trips: [...s.trips, { id: newTripId(), ...selections }] };
-    }),
-  deleteTrip: (id) =>
-    set((s) => {
-      const trips = s.trips.filter((t) => t.id !== id);
-      return trips.length === 0
+  loadTrips: async () => {
+    const trips = await api<Trip[]>("/api/trips");
+    set({ trips, tripsLoaded: true });
+  },
+  saveTrip: async () => {
+    const s = get();
+    const body: TripSelections = {
+      destination: s.destination.trim(),
+      days: s.days,
+      budget: s.budget,
+      activities: s.activities,
+    };
+    if (s.editingTripId) {
+      const updated = await api<Trip>(`/api/trips/${s.editingTripId}`, {
+        method: "PUT",
+        body,
+      });
+      set({
+        trips: s.trips.map((t) => (t.id === updated.id ? updated : t)),
+        editingTripId: null,
+      });
+    } else {
+      const created = await api<Trip>("/api/trips", { method: "POST", body });
+      set({ trips: [...s.trips, created] });
+    }
+  },
+  deleteTrip: async (id) => {
+    await api<void>(`/api/trips/${id}`, { method: "DELETE" });
+    const trips = get().trips.filter((t) => t.id !== id);
+    set(
+      trips.length === 0
         ? { trips, ...emptyDraft, editingTripId: null }
-        : { trips };
-    }),
-    }),
-    {
-      name: "tripora-trips",
-      storage: createJSONStorage(() => AsyncStorage),
-      partialize: (s) => ({ trips: s.trips }),
-      onRehydrateStorage: () => () => {
-        useTripStore.setState({ hasHydrated: true });
-      },
-    },
-  ),
-);
+        : { trips },
+    );
+  },
+  reset: () =>
+    set({ ...emptyDraft, trips: [], tripsLoaded: false, editingTripId: null }),
+}));

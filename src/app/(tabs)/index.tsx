@@ -1,12 +1,13 @@
 import { Image } from "expo-image";
 import { Redirect, router } from "expo-router";
 import { PencilSimple, Plus, SignOut, TrashSimple } from "phosphor-react-native";
-import { Alert, ScrollView, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Alert, RefreshControl, ScrollView, View } from "react-native";
 import Animated, { Easing, FadeInUp } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScalePressable } from "@/components/scale-pressable";
 import { Text } from "@/components/ui/text";
-import { authClient } from "@/lib/auth-client";
+import { authClient } from "@/lib/api";
 import { useThemeColors } from "@/lib/theme";
 import { TRAVEL_IMAGES } from "@/lib/travel-images";
 import { ACTIVITIES } from "@/lib/trip-data";
@@ -97,15 +98,49 @@ function TripRow({
 
 export default function Index() {
   const trips = useTripStore((s) => s.trips);
-  const hasHydrated = useTripStore((s) => s.hasHydrated);
   const startNewTrip = useTripStore((s) => s.startNewTrip);
   const startEditTrip = useTripStore((s) => s.startEditTrip);
   const deleteTrip = useTripStore((s) => s.deleteTrip);
+  const loadTrips = useTripStore((s) => s.loadTrips);
+  const tripsLoaded = useTripStore((s) => s.tripsLoaded);
+  const reset = useTripStore((s) => s.reset);
   const colors = useThemeColors();
   const { data: session } = authClient.useSession();
   const firstName = session?.user?.name?.split(" ")[0];
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
-  if (!hasHydrated) {
+  useEffect(() => {
+    loadTrips().catch(() => setLoadError(true));
+  }, [loadTrips]);
+
+  const retry = () => {
+    setLoadError(false);
+    loadTrips().catch(() => setLoadError(true));
+  };
+
+  if (loadError) {
+    return (
+      <SafeAreaView className="flex-1 items-center justify-center bg-background px-10">
+        <Text className="text-center font-sans-semibold text-base text-foreground">
+          Couldn't reach the server.
+        </Text>
+        <Text className="mt-1 text-center font-sans-medium text-sm text-muted-foreground">
+          Check the backend, then try again.
+        </Text>
+        <ScalePressable
+          onPress={retry}
+          className="mt-5 h-12 items-center justify-center rounded-full bg-primary px-8"
+        >
+          <Text className="font-sans-bold text-sm text-primary-foreground">
+            Retry
+          </Text>
+        </ScalePressable>
+      </SafeAreaView>
+    );
+  }
+
+  if (!tripsLoaded) {
     return null;
   }
 
@@ -133,7 +168,10 @@ export default function Index() {
       {
         text: "Sign out",
         style: "destructive",
-        onPress: () => void authClient.signOut(),
+        onPress: () => {
+          reset();
+          void authClient.signOut();
+        },
       },
     ]);
   };
@@ -141,7 +179,14 @@ export default function Index() {
   const confirmDelete = (trip: Trip) => {
     Alert.alert("Delete trip?", `${trip.destination} will be removed.`, [
       { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: () => deleteTrip(trip.id) },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () =>
+          deleteTrip(trip.id).catch(() =>
+            Alert.alert("Couldn't delete trip", "Please try again."),
+          ),
+      },
     ]);
   };
 
@@ -208,6 +253,19 @@ export default function Index() {
           className="mt-5 flex-1"
           contentContainerStyle={{ paddingBottom: TAB_BAR_CLEARANCE }}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => {
+                setRefreshing(true);
+                loadTrips()
+                  .catch(() => setLoadError(true))
+                  .finally(() => setRefreshing(false));
+              }}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
+            />
+          }
         >
           {trips.map((trip, index) => (
             <TripRow

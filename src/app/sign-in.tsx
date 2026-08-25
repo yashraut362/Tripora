@@ -14,7 +14,7 @@ import Animated, {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScalePressable } from "@/components/scale-pressable";
 import { Text } from "@/components/ui/text";
-import { authClient } from "@/lib/auth-client";
+import { authClient } from "@/lib/api";
 import { useThemeColors } from "@/lib/theme";
 import { TRAVEL_IMAGES } from "@/lib/travel-images";
 
