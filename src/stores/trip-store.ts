@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { api } from "@/lib/api";
+import { DEFAULT_BUDGET, DEFAULT_DAYS } from "@/lib/trip-data";
 
 export interface TripSelections {
   destination: string;
@@ -30,8 +31,8 @@ interface TripStore extends TripSelections {
 
 const emptyDraft: TripSelections = {
   destination: "",
-  days: 5,
-  budget: 1000,
+  days: DEFAULT_DAYS,
+  budget: DEFAULT_BUDGET,
   activities: [],
 };
 

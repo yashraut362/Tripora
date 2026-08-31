@@ -22,5 +22,7 @@ export const BUDGET_PRESETS = [500, 1000, 2500, 5000];
 
 export const MIN_DAYS = 1;
 export const MAX_DAYS = 30;
+export const DEFAULT_DAYS = 5;
+export const DEFAULT_BUDGET = 1000;
 
 export const WIZARD_STEPS = ["destination", "days", "budget", "activities"] as const;

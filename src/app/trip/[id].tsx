@@ -1,17 +1,14 @@
 import { Redirect, router, useLocalSearchParams } from "expo-router";
 import { CaretLeft, MapPin, PencilSimple } from "phosphor-react-native";
-import { Linking, ScrollView, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, Linking, ScrollView, View } from "react-native";
 import Animated, { Easing, FadeInUp } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScalePressable } from "@/components/scale-pressable";
 import { Text } from "@/components/ui/text";
 import { StepIllustration } from "@/components/wizard/step-illustration";
-import {
-  buildItinerary,
-  buildTripIntro,
-  mapsUrl,
-  type ItineraryDay,
-} from "@/lib/itinerary";
+import { api } from "@/lib/api";
+import { mapsUrl, type ItineraryDay, type TripDetail } from "@/lib/itinerary";
 import { useThemeColors } from "@/lib/theme";
 import { TRAVEL_IMAGES } from "@/lib/travel-images";
 import { ACTIVITIES } from "@/lib/trip-data";
@@ -112,6 +109,20 @@ export default function TripDetailScreen() {
   const trip = useTripStore((s) => s.trips.find((t) => t.id === id));
   const startEditTrip = useTripStore((s) => s.startEditTrip);
   const colors = useThemeColors();
+  const [detail, setDetail] = useState<TripDetail | null>(null);
+  const [detailError, setDetailError] = useState(false);
+
+  const loadDetail = useCallback(() => {
+    if (!id) return;
+    setDetailError(false);
+    api<TripDetail>(`/api/trips/${id}`)
+      .then(setDetail)
+      .catch(() => setDetailError(true));
+  }, [id]);
+
+  useEffect(() => {
+    loadDetail();
+  }, [loadDetail]);
 
   if (!trip) {
     return <Redirect href="/" />;
@@ -121,8 +132,8 @@ export default function TripDetailScreen() {
     trip.activities.includes(a.id),
   );
   const artwork = tripActivities[0]?.image ?? TRAVEL_IMAGES.airplane;
-  const itinerary = buildItinerary(trip);
-  const stopCount = itinerary.reduce((sum, d) => sum + d.stops.length, 0);
+  const stopCount =
+    detail?.itinerary.reduce((sum, d) => sum + d.stops.length, 0) ?? 0;
 
   const editTrip = () => {
     startEditTrip(trip.id);
@@ -163,7 +174,7 @@ export default function TripDetailScreen() {
             {trip.destination}
           </Text>
           <Text className="mt-2 font-sans-medium text-sm leading-5 text-muted-foreground">
-            {buildTripIntro(trip)}
+            {detail?.intro ?? ""}
           </Text>
         </Animated.View>
 
@@ -178,7 +189,7 @@ export default function TripDetailScreen() {
           <View className="h-8 w-px bg-border" />
           <Stat value={`$${(trip.budget ?? 0).toLocaleString()}`} label="Budget" />
           <View className="h-8 w-px bg-border" />
-          <Stat value={String(stopCount)} label="Stops" />
+          <Stat value={detail ? String(stopCount) : "…"} label="Stops" />
         </Animated.View>
 
         {tripActivities.length > 0 ? (
@@ -207,14 +218,34 @@ export default function TripDetailScreen() {
           <Text variant="eyebrow">Day by day</Text>
         </Animated.View>
 
-        {itinerary.map((itineraryDay, index) => (
-          <DaySection
-            key={itineraryDay.day}
-            itineraryDay={itineraryDay}
-            index={index}
-            destination={trip.destination}
-          />
-        ))}
+        {detailError ? (
+          <View className="items-center rounded-[24px] bg-card px-6 py-8">
+            <Text className="text-center font-sans-semibold text-sm text-foreground">
+              Couldn't load the itinerary.
+            </Text>
+            <ScalePressable
+              onPress={loadDetail}
+              className="mt-4 h-11 items-center justify-center rounded-full bg-primary px-6"
+            >
+              <Text className="font-sans-bold text-sm text-primary-foreground">
+                Retry
+              </Text>
+            </ScalePressable>
+          </View>
+        ) : !detail ? (
+          <View className="items-center py-8">
+            <ActivityIndicator color={colors.primary} />
+          </View>
+        ) : (
+          detail.itinerary.map((itineraryDay, index) => (
+            <DaySection
+              key={itineraryDay.day}
+              itineraryDay={itineraryDay}
+              index={index}
+              destination={trip.destination}
+            />
+          ))
+        )}
       </ScrollView>
     </SafeAreaView>
   );
