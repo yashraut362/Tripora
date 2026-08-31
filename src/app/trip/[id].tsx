@@ -1,11 +1,27 @@
+import { Image } from "expo-image";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { CaretLeft, MapPin, PencilSimple } from "phosphor-react-native";
+import {
+  CaretLeft,
+  MapPin,
+  PaperPlaneRight,
+  PencilSimple,
+  TrashSimple,
+} from "phosphor-react-native";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, Linking, ScrollView, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Linking,
+  ScrollView,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import Animated, { Easing, FadeInUp } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { StepIllustration } from "@/components/form/step-illustration";
+import { SelectPill } from "@/components/form/select-pill";
 import { ScalePressable } from "@/components/scale-pressable";
+import { TripMap, tripStops } from "@/components/trip-map";
+import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { api, ApiError } from "@/lib/api";
 import type { ItineraryDay, TripDetail } from "@/lib/api";
@@ -20,17 +36,6 @@ function mapsUrl(query: string, destination: string) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
     `${query} ${destination}`,
   )}`;
-}
-
-function Stat({ value, label }: { value: string; label: string }) {
-  return (
-    <View className="flex-1 items-center">
-      <Text className="font-sans-bold text-lg text-foreground">{value}</Text>
-      <Text className="mt-0.5 font-sans-medium text-xs text-muted-foreground">
-        {label}
-      </Text>
-    </View>
-  );
 }
 
 function DaySection({
@@ -112,9 +117,16 @@ function DaySection({
 export default function TripDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colors = useThemeColors();
+  const { height: windowHeight } = useWindowDimensions();
   const [trip, setTrip] = useState<TripDetail | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [tab, setTab] = useState<"itinerary" | "map" | "edit">("itinerary");
+  const [messages, setMessages] = useState<
+    { role: "user" | "ai"; text: string }[]
+  >([]);
+  const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
 
   const loadTrip = useCallback(() => {
     if (!id) return;
@@ -148,6 +160,47 @@ export default function TripDetailScreen() {
     router.push({ pathname: "/plan", params: { id: trip.id } } as never);
   };
 
+  const confirmDelete = () => {
+    if (!trip) return;
+    Alert.alert("Delete trip?", `${trip.destination} will be removed.`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () =>
+          api<void>(`/api/trips/${trip.id}`, { method: "DELETE" })
+            .then(() => router.back())
+            .catch(() =>
+              Alert.alert("Couldn't delete trip", "Please try again."),
+            ),
+      },
+    ]);
+  };
+
+  const sendEdit = () => {
+    const message = draft.trim();
+    if (!message || sending || !trip) return;
+    setMessages((prev) => [...prev, { role: "user", text: message }]);
+    setDraft("");
+    setSending(true);
+    api<TripDetail & { note: string }>(`/api/trips/${trip.id}/edit`, {
+      method: "POST",
+      body: { message },
+      timeoutMs: 90000,
+    })
+      .then((updated) => {
+        setTrip(updated);
+        setMessages((prev) => [...prev, { role: "ai", text: updated.note }]);
+      })
+      .catch(() =>
+        setMessages((prev) => [
+          ...prev,
+          { role: "ai", text: "Couldn't update the itinerary. Try again." },
+        ]),
+      )
+      .finally(() => setSending(false));
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-background">
       <View className="flex-row items-center justify-between px-6 py-3">
@@ -159,13 +212,22 @@ export default function TripDetailScreen() {
           <CaretLeft size={18} weight="bold" color={colors.foreground} />
         </ScalePressable>
         {trip ? (
-          <ScalePressable
-            onPress={editTrip}
-            hitSlop={8}
-            className="h-10 w-10 items-center justify-center rounded-full bg-card"
-          >
-            <PencilSimple size={16} weight="bold" color={colors.primary} />
-          </ScalePressable>
+          <View className="flex-row gap-2">
+            <ScalePressable
+              onPress={editTrip}
+              hitSlop={8}
+              className="h-10 w-10 items-center justify-center rounded-full bg-card"
+            >
+              <PencilSimple size={16} weight="bold" color={colors.primary} />
+            </ScalePressable>
+            <ScalePressable
+              onPress={confirmDelete}
+              hitSlop={8}
+              className="h-10 w-10 items-center justify-center rounded-full bg-card"
+            >
+              <TrashSimple size={16} weight="bold" color={colors.destructive} />
+            </ScalePressable>
+          </View>
         ) : null}
       </View>
 
@@ -198,60 +260,142 @@ export default function TripDetailScreen() {
           className="flex-1 px-6"
           contentContainerStyle={{ paddingBottom: 32 }}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          <Animated.View entering={FadeInUp.duration(600).easing(EASE)}>
-            <StepIllustration source={artwork} size={150} />
-            <View className="mt-2 flex-row items-center gap-3">
-              <View className="h-1.5 w-8 rounded-full bg-primary" />
-              <Text variant="eyebrow">Itinerary</Text>
-            </View>
-            <Text variant="h1" className="mt-3">
-              {trip.destination}
-            </Text>
-            <Text className="mt-2 font-sans-medium text-sm leading-5 text-muted-foreground">
-              {trip.intro}
-            </Text>
-          </Animated.View>
-
           <Animated.View
-            entering={FadeInUp.delay(80).duration(600).easing(EASE)}
-            className="mt-5 flex-row items-center rounded-[24px] bg-card py-4"
+            entering={FadeInUp.duration(600).easing(EASE)}
+            className="flex-row items-center gap-4 pt-1"
           >
-            <Stat
-              value={String(trip.days)}
-              label={trip.days === 1 ? "Day" : "Days"}
-            />
-            <View className="h-8 w-px bg-border" />
-            <Stat value={`$${(trip.budget ?? 0).toLocaleString()}`} label="Budget" />
-            <View className="h-8 w-px bg-border" />
-            <Stat value={String(stopCount)} label="Stops" />
+            <View className="h-16 w-16 items-center justify-center rounded-full bg-secondary/70">
+              <Image
+                source={artwork}
+                style={{ width: 52, height: 52 }}
+                contentFit="contain"
+              />
+            </View>
+            <View className="flex-1">
+              <Text variant="h2" numberOfLines={1}>
+                {trip.destination}
+              </Text>
+              <Text className="mt-0.5 font-sans-medium text-xs text-muted-foreground">
+                {trip.days} {trip.days === 1 ? "day" : "days"} · $
+                {(trip.budget ?? 0).toLocaleString()}
+                {stopCount > 0 ? ` · ${stopCount} stops` : ""}
+              </Text>
+            </View>
           </Animated.View>
 
-          {tripActivities.length > 0 ? (
+          {trip.intro ? (
             <Animated.View
-              entering={FadeInUp.delay(140).duration(600).easing(EASE)}
-              className="mt-3 flex-row flex-wrap gap-1.5"
+              entering={FadeInUp.delay(80).duration(600).easing(EASE)}
             >
-              {tripActivities.map((activity) => (
-                <View
-                  key={activity.id}
-                  className="rounded-full bg-muted px-3 py-1.5"
-                >
-                  <Text className="font-sans-semibold text-[11px] text-muted-foreground">
-                    {activity.label}
-                  </Text>
-                </View>
-              ))}
+              <Text
+                className="mt-3 font-sans-medium text-sm leading-5 text-muted-foreground"
+                numberOfLines={2}
+              >
+                {trip.intro}
+              </Text>
             </Animated.View>
           ) : null}
 
-          <Animated.View
-            entering={FadeInUp.delay(200).duration(600).easing(EASE)}
-            className="mb-4 mt-7 flex-row items-center gap-3"
-          >
-            <View className="h-1.5 w-8 rounded-full bg-primary" />
-            <Text variant="eyebrow">Day by day</Text>
-          </Animated.View>
+          <View className="mt-5 flex-row gap-2">
+            <SelectPill
+              label="Itinerary"
+              selected={tab === "itinerary"}
+              onPress={() => setTab("itinerary")}
+            />
+            <SelectPill
+              label="Map"
+              selected={tab === "map"}
+              onPress={() => setTab("map")}
+            />
+            <SelectPill
+              label="Edit"
+              selected={tab === "edit"}
+              onPress={() => setTab("edit")}
+            />
+          </View>
+
+          {tab === "map" ? (
+            <View
+              className="mt-4 overflow-hidden rounded-[24px]"
+              style={{ height: Math.max(440, windowHeight - 320) }}
+            >
+              <TripMap stops={tripStops(trip)} />
+            </View>
+          ) : tab === "edit" ? (
+            <View className="mt-4">
+              {messages.length === 0 && !sending ? (
+                <Text className="mb-3 font-sans-medium text-sm leading-5 text-muted-foreground">
+                  Tell me what to change — "no plans for day 3 evening, I have
+                  a flight", "swap day 1 and day 2", "more food spots".
+                </Text>
+              ) : null}
+              {messages.map((message, index) => (
+                <View
+                  key={index}
+                  className={cn(
+                    "mb-2 max-w-[85%] rounded-[18px] px-4 py-2.5",
+                    message.role === "user"
+                      ? "self-end bg-primary"
+                      : "self-start bg-card",
+                  )}
+                >
+                  <Text
+                    className={cn(
+                      "font-sans-medium text-sm leading-5",
+                      message.role === "user"
+                        ? "text-primary-foreground"
+                        : "text-foreground",
+                    )}
+                  >
+                    {message.text}
+                  </Text>
+                </View>
+              ))}
+              {sending ? (
+                <View className="mb-2 self-start rounded-[18px] bg-card px-4 py-2.5">
+                  <Text className="font-sans-medium text-sm text-muted-foreground">
+                    Updating your itinerary…
+                  </Text>
+                </View>
+              ) : null}
+              <View className="mt-2 flex-row items-center gap-2">
+                <Input
+                  value={draft}
+                  onChangeText={setDraft}
+                  placeholder="Ask for a change…"
+                  editable={!sending}
+                  returnKeyType="send"
+                  onSubmitEditing={sendEdit}
+                  className="h-12 flex-1 rounded-full bg-card px-5 text-sm"
+                />
+                <ScalePressable
+                  onPress={sendEdit}
+                  disabled={sending || draft.trim().length === 0}
+                  hitSlop={6}
+                  className={cn(
+                    "h-12 w-12 items-center justify-center rounded-full bg-primary",
+                    (sending || draft.trim().length === 0) && "opacity-30",
+                  )}
+                >
+                  <PaperPlaneRight
+                    size={18}
+                    weight="fill"
+                    color={colors.primaryForeground}
+                  />
+                </ScalePressable>
+              </View>
+            </View>
+          ) : (
+            <>
+              <Animated.View
+                entering={FadeInUp.delay(200).duration(600).easing(EASE)}
+                className="mb-4 mt-5 flex-row items-center gap-3"
+              >
+                <View className="h-1.5 w-8 rounded-full bg-primary" />
+                <Text variant="eyebrow">Day by day</Text>
+              </Animated.View>
 
           {trip.itinerary.length === 0 ? (
             <View className="items-center rounded-[24px] bg-card px-6 py-10">
@@ -279,6 +423,8 @@ export default function TripDetailScreen() {
                 destination={trip.destination}
               />
             ))
+          )}
+            </>
           )}
         </ScrollView>
       )}
