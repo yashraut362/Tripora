@@ -1,17 +1,24 @@
 import { Image } from "expo-image";
-import { Redirect, router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { PencilSimple, Plus, SignOut, TrashSimple } from "phosphor-react-native";
-import { useEffect, useState } from "react";
-import { Alert, RefreshControl, ScrollView, View } from "react-native";
+import { useCallback, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
+  ScrollView,
+  View,
+} from "react-native";
 import Animated, { Easing, FadeInUp } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScalePressable } from "@/components/scale-pressable";
 import { Text } from "@/components/ui/text";
-import { authClient } from "@/lib/api";
+import { api } from "@/lib/api";
+import type { Trip } from "@/lib/api";
+import { authClient } from "@/lib/auth";
 import { useThemeColors } from "@/lib/theme";
 import { TRAVEL_IMAGES } from "@/lib/travel-images";
 import { ACTIVITIES } from "@/lib/trip-data";
-import { useTripStore, type Trip } from "@/stores/trip-store";
 
 const EASE = Easing.bezier(0.32, 0.72, 0, 1);
 const TAB_BAR_CLEARANCE = 88;
@@ -97,65 +104,36 @@ function TripRow({
 }
 
 export default function Index() {
-  const trips = useTripStore((s) => s.trips);
-  const startNewTrip = useTripStore((s) => s.startNewTrip);
-  const startEditTrip = useTripStore((s) => s.startEditTrip);
-  const deleteTrip = useTripStore((s) => s.deleteTrip);
-  const loadTrips = useTripStore((s) => s.loadTrips);
-  const tripsLoaded = useTripStore((s) => s.tripsLoaded);
-  const reset = useTripStore((s) => s.reset);
   const colors = useThemeColors();
   const { data: session } = authClient.useSession();
   const firstName = session?.user?.name?.split(" ")[0];
-  const [refreshing, setRefreshing] = useState(false);
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    loadTrips().catch(() => setLoadError(true));
-  }, [loadTrips]);
-
-  const retry = () => {
+  const loadTrips = useCallback(() => {
     setLoadError(false);
-    loadTrips().catch(() => setLoadError(true));
-  };
+    return api<Trip[]>("/api/trips")
+      .then((data) => {
+        setTrips(data);
+        setLoaded(true);
+      })
+      .catch(() => setLoadError(true));
+  }, []);
 
-  if (loadError) {
-    return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-background px-10">
-        <Text className="text-center font-sans-semibold text-base text-foreground">
-          Couldn't reach the server.
-        </Text>
-        <Text className="mt-1 text-center font-sans-medium text-sm text-muted-foreground">
-          Check the backend, then try again.
-        </Text>
-        <ScalePressable
-          onPress={retry}
-          className="mt-5 h-12 items-center justify-center rounded-full bg-primary px-8"
-        >
-          <Text className="font-sans-bold text-sm text-primary-foreground">
-            Retry
-          </Text>
-        </ScalePressable>
-      </SafeAreaView>
-    );
-  }
-
-  if (!tripsLoaded) {
-    return null;
-  }
-
-  if (trips.length === 0) {
-    return <Redirect href="/plan/destination" />;
-  }
+  useFocusEffect(
+    useCallback(() => {
+      loadTrips();
+    }, [loadTrips]),
+  );
 
   const planNewTrip = () => {
-    startNewTrip();
-    router.push("/plan/destination");
+    router.push("/plan" as never);
   };
 
   const editTrip = (id: string) => {
-    startEditTrip(id);
-    router.push("/plan/destination");
+    router.push({ pathname: "/plan", params: { id } } as never);
   };
 
   const openTrip = (id: string) => {
@@ -168,10 +146,7 @@ export default function Index() {
       {
         text: "Sign out",
         style: "destructive",
-        onPress: () => {
-          reset();
-          void authClient.signOut();
-        },
+        onPress: () => void authClient.signOut(),
       },
     ]);
   };
@@ -183,12 +158,45 @@ export default function Index() {
         text: "Delete",
         style: "destructive",
         onPress: () =>
-          deleteTrip(trip.id).catch(() =>
-            Alert.alert("Couldn't delete trip", "Please try again."),
-          ),
+          api<void>(`/api/trips/${trip.id}`, { method: "DELETE" })
+            .then(() =>
+              setTrips((prev) => prev.filter((t) => t.id !== trip.id)),
+            )
+            .catch(() =>
+              Alert.alert("Couldn't delete trip", "Please try again."),
+            ),
       },
     ]);
   };
+
+  if (!loaded && loadError) {
+    return (
+      <SafeAreaView className="flex-1 items-center justify-center bg-background px-10">
+        <Text className="text-center font-sans-semibold text-base text-foreground">
+          Couldn't reach the server.
+        </Text>
+        <Text className="mt-1 text-center font-sans-medium text-sm text-muted-foreground">
+          Check the backend, then try again.
+        </Text>
+        <ScalePressable
+          onPress={loadTrips}
+          className="mt-5 h-12 items-center justify-center rounded-full bg-primary px-8"
+        >
+          <Text className="font-sans-bold text-sm text-primary-foreground">
+            Retry
+          </Text>
+        </ScalePressable>
+      </SafeAreaView>
+    );
+  }
+
+  if (!loaded) {
+    return (
+      <SafeAreaView className="flex-1 items-center justify-center bg-background">
+        <ActivityIndicator color={colors.primary} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 overflow-hidden bg-background">
@@ -249,35 +257,60 @@ export default function Index() {
           </Text>
         </Animated.View>
 
-        <ScrollView
-          className="mt-5 flex-1"
-          contentContainerStyle={{ paddingBottom: TAB_BAR_CLEARANCE }}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => {
-                setRefreshing(true);
-                loadTrips()
-                  .catch(() => setLoadError(true))
-                  .finally(() => setRefreshing(false));
-              }}
-              tintColor={colors.primary}
-              colors={[colors.primary]}
+        {trips.length === 0 ? (
+          <Animated.View
+            entering={FadeInUp.delay(120).duration(600).easing(EASE)}
+            className="flex-1 items-center justify-center pb-24"
+          >
+            <Image
+              source={TRAVEL_IMAGES.camperVanMap}
+              style={{ width: 180, height: 180 }}
+              contentFit="contain"
             />
-          }
-        >
-          {trips.map((trip, index) => (
-            <TripRow
-              key={trip.id}
-              trip={trip}
-              index={index}
-              onOpen={() => openTrip(trip.id)}
-              onEdit={() => editTrip(trip.id)}
-              onDelete={() => confirmDelete(trip)}
-            />
-          ))}
-        </ScrollView>
+            <Text className="mt-4 text-center font-sans-semibold text-base text-foreground">
+              No trips yet.
+            </Text>
+            <Text className="mt-1 text-center font-sans-medium text-sm text-muted-foreground">
+              Somewhere out there is waiting for you.
+            </Text>
+            <ScalePressable
+              onPress={planNewTrip}
+              className="mt-6 h-14 items-center justify-center rounded-full bg-primary px-8"
+            >
+              <Text className="font-sans-bold text-base text-primary-foreground">
+                Plan your first trip
+              </Text>
+            </ScalePressable>
+          </Animated.View>
+        ) : (
+          <ScrollView
+            className="mt-5 flex-1"
+            contentContainerStyle={{ paddingBottom: TAB_BAR_CLEARANCE }}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => {
+                  setRefreshing(true);
+                  loadTrips().finally(() => setRefreshing(false));
+                }}
+                tintColor={colors.primary}
+                colors={[colors.primary]}
+              />
+            }
+          >
+            {trips.map((trip, index) => (
+              <TripRow
+                key={trip.id}
+                trip={trip}
+                index={index}
+                onOpen={() => openTrip(trip.id)}
+                onEdit={() => editTrip(trip.id)}
+                onDelete={() => confirmDelete(trip)}
+              />
+            ))}
+          </ScrollView>
+        )}
       </View>
     </SafeAreaView>
   );

@@ -1,21 +1,26 @@
-import { Redirect, router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { CaretLeft, MapPin, PencilSimple } from "phosphor-react-native";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { ActivityIndicator, Linking, ScrollView, View } from "react-native";
 import Animated, { Easing, FadeInUp } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { StepIllustration } from "@/components/form/step-illustration";
 import { ScalePressable } from "@/components/scale-pressable";
 import { Text } from "@/components/ui/text";
-import { StepIllustration } from "@/components/wizard/step-illustration";
-import { api } from "@/lib/api";
-import { mapsUrl, type ItineraryDay, type TripDetail } from "@/lib/itinerary";
+import { api, ApiError } from "@/lib/api";
+import type { ItineraryDay, TripDetail } from "@/lib/api";
 import { useThemeColors } from "@/lib/theme";
 import { TRAVEL_IMAGES } from "@/lib/travel-images";
 import { ACTIVITIES } from "@/lib/trip-data";
-import { useTripStore } from "@/stores/trip-store";
 import { cn } from "@/lib/utils";
 
 const EASE = Easing.bezier(0.32, 0.72, 0, 1);
+
+function mapsUrl(query: string, destination: string) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+    `${query} ${destination}`,
+  )}`;
+}
 
 function Stat({ value, label }: { value: string; label: string }) {
   return (
@@ -106,38 +111,41 @@ function DaySection({
 
 export default function TripDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const trip = useTripStore((s) => s.trips.find((t) => t.id === id));
-  const startEditTrip = useTripStore((s) => s.startEditTrip);
   const colors = useThemeColors();
-  const [detail, setDetail] = useState<TripDetail | null>(null);
-  const [detailError, setDetailError] = useState(false);
+  const [trip, setTrip] = useState<TripDetail | null>(null);
+  const [notFound, setNotFound] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
-  const loadDetail = useCallback(() => {
+  const loadTrip = useCallback(() => {
     if (!id) return;
-    setDetailError(false);
+    setLoadError(false);
     api<TripDetail>(`/api/trips/${id}`)
-      .then(setDetail)
-      .catch(() => setDetailError(true));
+      .then(setTrip)
+      .catch((err) => {
+        if (err instanceof ApiError && err.status === 404) {
+          setNotFound(true);
+        } else {
+          setLoadError(true);
+        }
+      });
   }, [id]);
 
-  useEffect(() => {
-    loadDetail();
-  }, [loadDetail]);
-
-  if (!trip) {
-    return <Redirect href="/" />;
-  }
-
-  const tripActivities = ACTIVITIES.filter((a) =>
-    trip.activities.includes(a.id),
+  useFocusEffect(
+    useCallback(() => {
+      loadTrip();
+    }, [loadTrip]),
   );
+
+  const tripActivities = trip
+    ? ACTIVITIES.filter((a) => trip.activities.includes(a.id))
+    : [];
   const artwork = tripActivities[0]?.image ?? TRAVEL_IMAGES.airplane;
   const stopCount =
-    detail?.itinerary.reduce((sum, d) => sum + d.stops.length, 0) ?? 0;
+    trip?.itinerary.reduce((sum, d) => sum + d.stops.length, 0) ?? 0;
 
   const editTrip = () => {
-    startEditTrip(trip.id);
-    router.push("/plan/destination");
+    if (!trip) return;
+    router.push({ pathname: "/plan", params: { id: trip.id } } as never);
   };
 
   return (
@@ -150,103 +158,111 @@ export default function TripDetailScreen() {
         >
           <CaretLeft size={18} weight="bold" color={colors.foreground} />
         </ScalePressable>
-        <ScalePressable
-          onPress={editTrip}
-          hitSlop={8}
-          className="h-10 w-10 items-center justify-center rounded-full bg-card"
-        >
-          <PencilSimple size={16} weight="bold" color={colors.primary} />
-        </ScalePressable>
+        {trip ? (
+          <ScalePressable
+            onPress={editTrip}
+            hitSlop={8}
+            className="h-10 w-10 items-center justify-center rounded-full bg-card"
+          >
+            <PencilSimple size={16} weight="bold" color={colors.primary} />
+          </ScalePressable>
+        ) : null}
       </View>
 
-      <ScrollView
-        className="flex-1 px-6"
-        contentContainerStyle={{ paddingBottom: 32 }}
-        showsVerticalScrollIndicator={false}
-      >
-        <Animated.View entering={FadeInUp.duration(600).easing(EASE)}>
-          <StepIllustration source={artwork} size={150} />
-          <View className="mt-2 flex-row items-center gap-3">
-            <View className="h-1.5 w-8 rounded-full bg-primary" />
-            <Text variant="eyebrow">Itinerary</Text>
-          </View>
-          <Text variant="h1" className="mt-3">
-            {trip.destination}
+      {notFound ? (
+        <View className="flex-1 items-center justify-center px-10">
+          <Text className="text-center font-sans-semibold text-base text-foreground">
+            Trip not found.
           </Text>
-          <Text className="mt-2 font-sans-medium text-sm leading-5 text-muted-foreground">
-            {detail?.intro ?? ""}
+        </View>
+      ) : loadError && !trip ? (
+        <View className="flex-1 items-center justify-center px-10">
+          <Text className="text-center font-sans-semibold text-base text-foreground">
+            Couldn't load this trip.
           </Text>
-        </Animated.View>
-
-        <Animated.View
-          entering={FadeInUp.delay(80).duration(600).easing(EASE)}
-          className="mt-5 flex-row items-center rounded-[24px] bg-card py-4"
-        >
-          <Stat
-            value={String(trip.days)}
-            label={trip.days === 1 ? "Day" : "Days"}
-          />
-          <View className="h-8 w-px bg-border" />
-          <Stat value={`$${(trip.budget ?? 0).toLocaleString()}`} label="Budget" />
-          <View className="h-8 w-px bg-border" />
-          <Stat value={detail ? String(stopCount) : "…"} label="Stops" />
-        </Animated.View>
-
-        {tripActivities.length > 0 ? (
-          <Animated.View
-            entering={FadeInUp.delay(140).duration(600).easing(EASE)}
-            className="mt-3 flex-row flex-wrap gap-1.5"
+          <ScalePressable
+            onPress={loadTrip}
+            className="mt-5 h-12 items-center justify-center rounded-full bg-primary px-8"
           >
-            {tripActivities.map((activity) => (
-              <View
-                key={activity.id}
-                className="rounded-full bg-muted px-3 py-1.5"
-              >
-                <Text className="font-sans-semibold text-[11px] text-muted-foreground">
-                  {activity.label}
-                </Text>
-              </View>
-            ))}
-          </Animated.View>
-        ) : null}
-
-        <Animated.View
-          entering={FadeInUp.delay(200).duration(600).easing(EASE)}
-          className="mb-4 mt-7 flex-row items-center gap-3"
-        >
-          <View className="h-1.5 w-8 rounded-full bg-primary" />
-          <Text variant="eyebrow">Day by day</Text>
-        </Animated.View>
-
-        {detailError ? (
-          <View className="items-center rounded-[24px] bg-card px-6 py-8">
-            <Text className="text-center font-sans-semibold text-sm text-foreground">
-              Couldn't load the itinerary.
+            <Text className="font-sans-bold text-sm text-primary-foreground">
+              Retry
             </Text>
-            <ScalePressable
-              onPress={loadDetail}
-              className="mt-4 h-11 items-center justify-center rounded-full bg-primary px-6"
+          </ScalePressable>
+        </View>
+      ) : !trip ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator color={colors.primary} />
+        </View>
+      ) : (
+        <ScrollView
+          className="flex-1 px-6"
+          contentContainerStyle={{ paddingBottom: 32 }}
+          showsVerticalScrollIndicator={false}
+        >
+          <Animated.View entering={FadeInUp.duration(600).easing(EASE)}>
+            <StepIllustration source={artwork} size={150} />
+            <View className="mt-2 flex-row items-center gap-3">
+              <View className="h-1.5 w-8 rounded-full bg-primary" />
+              <Text variant="eyebrow">Itinerary</Text>
+            </View>
+            <Text variant="h1" className="mt-3">
+              {trip.destination}
+            </Text>
+            <Text className="mt-2 font-sans-medium text-sm leading-5 text-muted-foreground">
+              {trip.intro}
+            </Text>
+          </Animated.View>
+
+          <Animated.View
+            entering={FadeInUp.delay(80).duration(600).easing(EASE)}
+            className="mt-5 flex-row items-center rounded-[24px] bg-card py-4"
+          >
+            <Stat
+              value={String(trip.days)}
+              label={trip.days === 1 ? "Day" : "Days"}
+            />
+            <View className="h-8 w-px bg-border" />
+            <Stat value={`$${(trip.budget ?? 0).toLocaleString()}`} label="Budget" />
+            <View className="h-8 w-px bg-border" />
+            <Stat value={String(stopCount)} label="Stops" />
+          </Animated.View>
+
+          {tripActivities.length > 0 ? (
+            <Animated.View
+              entering={FadeInUp.delay(140).duration(600).easing(EASE)}
+              className="mt-3 flex-row flex-wrap gap-1.5"
             >
-              <Text className="font-sans-bold text-sm text-primary-foreground">
-                Retry
-              </Text>
-            </ScalePressable>
-          </View>
-        ) : !detail ? (
-          <View className="items-center py-8">
-            <ActivityIndicator color={colors.primary} />
-          </View>
-        ) : (
-          detail.itinerary.map((itineraryDay, index) => (
+              {tripActivities.map((activity) => (
+                <View
+                  key={activity.id}
+                  className="rounded-full bg-muted px-3 py-1.5"
+                >
+                  <Text className="font-sans-semibold text-[11px] text-muted-foreground">
+                    {activity.label}
+                  </Text>
+                </View>
+              ))}
+            </Animated.View>
+          ) : null}
+
+          <Animated.View
+            entering={FadeInUp.delay(200).duration(600).easing(EASE)}
+            className="mb-4 mt-7 flex-row items-center gap-3"
+          >
+            <View className="h-1.5 w-8 rounded-full bg-primary" />
+            <Text variant="eyebrow">Day by day</Text>
+          </Animated.View>
+
+          {trip.itinerary.map((itineraryDay, index) => (
             <DaySection
               key={itineraryDay.day}
               itineraryDay={itineraryDay}
               index={index}
               destination={trip.destination}
             />
-          ))
-        )}
-      </ScrollView>
+          ))}
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }

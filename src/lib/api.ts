@@ -1,30 +1,34 @@
-import { expoClient } from "@better-auth/expo/client";
-import Constants from "expo-constants";
-import * as SecureStore from "expo-secure-store";
-import { createAuthClient } from "better-auth/react";
+import { authClient } from "@/lib/auth";
+import { API_URL } from "@/lib/config";
 
-const API_PORT = 3000;
-
-function resolveBaseUrl(): string {
-  const override = process.env.EXPO_PUBLIC_API_URL;
-  if (override) return override.replace(/\/+$/, "");
-  const host = Constants.expoConfig?.hostUri?.split(":")[0];
-  if (host) return `http://${host}:${API_PORT}`;
-  return `http://localhost:${API_PORT}`;
+export interface TripSelections {
+  destination: string;
+  days: number;
+  budget: number | null;
+  activities: string[];
 }
 
-export const API_URL = resolveBaseUrl();
+export interface Trip extends TripSelections {
+  id: string;
+}
 
-export const authClient = createAuthClient({
-  baseURL: API_URL,
-  plugins: [
-    expoClient({
-      scheme: "tripora",
-      storagePrefix: "tripora",
-      storage: SecureStore,
-    }),
-  ],
-});
+export interface ItineraryStop {
+  slot: "Morning" | "Afternoon" | "Evening";
+  title: string;
+  detail: string;
+  mapsQuery: string;
+}
+
+export interface ItineraryDay {
+  day: number;
+  theme: string;
+  stops: ItineraryStop[];
+}
+
+export interface TripDetail extends Trip {
+  intro: string;
+  itinerary: ItineraryDay[];
+}
 
 export class ApiError extends Error {
   status: number;
