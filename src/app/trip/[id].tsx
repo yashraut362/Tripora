@@ -253,14 +253,33 @@ export default function TripDetailScreen() {
             <Text variant="eyebrow">Day by day</Text>
           </Animated.View>
 
-          {trip.itinerary.map((itineraryDay, index) => (
-            <DaySection
-              key={itineraryDay.day}
-              itineraryDay={itineraryDay}
-              index={index}
-              destination={trip.destination}
-            />
-          ))}
+          {trip.itinerary.length === 0 ? (
+            <View className="items-center rounded-[24px] bg-card px-6 py-10">
+              <Text className="text-center font-sans-semibold text-sm text-foreground">
+                Crafting your itinerary…
+              </Text>
+              <Text className="mt-1 text-center font-sans-medium text-xs text-muted-foreground">
+                Our AI is picking real spots for your trip.
+              </Text>
+              <ScalePressable
+                onPress={loadTrip}
+                className="mt-5 h-11 items-center justify-center rounded-full bg-primary px-6"
+              >
+                <Text className="font-sans-bold text-sm text-primary-foreground">
+                  Check again
+                </Text>
+              </ScalePressable>
+            </View>
+          ) : (
+            trip.itinerary.map((itineraryDay, index) => (
+              <DaySection
+                key={itineraryDay.day}
+                itineraryDay={itineraryDay}
+                index={index}
+                destination={trip.destination}
+              />
+            ))
+          )}
         </ScrollView>
       )}
     </SafeAreaView>
