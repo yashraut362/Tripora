@@ -98,13 +98,7 @@ function buildMapHtml(stops: MapStop[]) {
 </html>`;
 }
 
-export function TripMap({
-  stops,
-  clearance = 12,
-}: {
-  stops: MapStop[];
-  clearance?: number;
-}) {
+export function TripMap({ stops }: { stops: MapStop[] }) {
   const insets = useSafeAreaInsets();
   const colors = useThemeColors();
   const webRef = useRef<WebView>(null);
@@ -134,7 +128,7 @@ export function TripMap({
             position: "absolute",
             left: 0,
             right: 0,
-            bottom: insets.bottom + clearance,
+            bottom: insets.bottom + 12,
           }}
           contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
         >

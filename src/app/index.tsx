@@ -1,10 +1,17 @@
 import { Image } from "expo-image";
 import { router, useFocusEffect } from "expo-router";
-import { PencilSimple, Plus, SignOut, TrashSimple } from "phosphor-react-native";
+import {
+  PencilSimple,
+  Plus,
+  SignOut,
+  TrashSimple,
+  X,
+} from "phosphor-react-native";
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Pressable,
   RefreshControl,
   ScrollView,
   View,
@@ -21,7 +28,14 @@ import { TRAVEL_IMAGES } from "@/lib/travel-images";
 import { ACTIVITIES } from "@/lib/trip-data";
 
 const EASE = Easing.bezier(0.32, 0.72, 0, 1);
-const TAB_BAR_CLEARANCE = 88;
+const FAB_CLEARANCE = 120;
+const SHADOW = {
+  shadowColor: "#000",
+  shadowOpacity: 0.15,
+  shadowRadius: 8,
+  shadowOffset: { width: 0, height: 4 },
+  elevation: 5,
+} as const;
 
 function TripRow({
   trip,
@@ -111,6 +125,7 @@ export default function Index() {
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const loadTrips = useCallback(() => {
     setLoadError(false);
@@ -216,41 +231,15 @@ export default function Index() {
               <View className="h-1.5 w-8 rounded-full bg-primary" />
               <Text variant="eyebrow">Tripora</Text>
             </View>
-            <View className="flex-row items-center gap-2">
-              <Image
-                source={TRAVEL_IMAGES.airplane}
-                style={{ width: 44, height: 44 }}
-                contentFit="contain"
-              />
-              <ScalePressable
-                onPress={confirmSignOut}
-                hitSlop={6}
-                className="h-10 w-10 items-center justify-center rounded-full bg-card"
-              >
-                <SignOut size={16} weight="bold" color={colors.mutedForeground} />
-              </ScalePressable>
-            </View>
+            <Image
+              source={TRAVEL_IMAGES.airplane}
+              style={{ width: 44, height: 44 }}
+              contentFit="contain"
+            />
           </View>
-          <View className="mt-2 flex-row items-center justify-between">
-            <Text variant="h1">My Trips</Text>
-            <ScalePressable
-              onPress={planNewTrip}
-              hitSlop={6}
-              className="h-11 flex-row items-center gap-1.5 rounded-full bg-primary pl-4 pr-5"
-              style={{
-                shadowColor: "#000",
-                shadowOpacity: 0.15,
-                shadowRadius: 8,
-                shadowOffset: { width: 0, height: 4 },
-                elevation: 5,
-              }}
-            >
-              <Plus size={16} weight="bold" color={colors.primaryForeground} />
-              <Text className="font-sans-bold text-sm text-primary-foreground">
-                New trip
-              </Text>
-            </ScalePressable>
-          </View>
+          <Text variant="h1" className="mt-2">
+            My Trips
+          </Text>
           <Text className="mt-1 font-sans-medium text-sm text-muted-foreground">
             {firstName ? `Hey ${firstName} — ` : ""}
             {trips.length} {trips.length === 1 ? "adventure" : "adventures"} planned
@@ -285,7 +274,7 @@ export default function Index() {
         ) : (
           <ScrollView
             className="mt-5 flex-1"
-            contentContainerStyle={{ paddingBottom: TAB_BAR_CLEARANCE }}
+            contentContainerStyle={{ paddingBottom: FAB_CLEARANCE }}
             showsVerticalScrollIndicator={false}
             refreshControl={
               <RefreshControl
@@ -311,6 +300,61 @@ export default function Index() {
             ))}
           </ScrollView>
         )}
+      </View>
+
+      {menuOpen ? (
+        <Pressable
+          className="absolute inset-0"
+          onPress={() => setMenuOpen(false)}
+        />
+      ) : null}
+      <View className="absolute bottom-6 right-6 items-end gap-3">
+        {menuOpen ? (
+          <>
+            <Animated.View entering={FadeInUp.duration(200)}>
+              <ScalePressable
+                onPress={() => {
+                  setMenuOpen(false);
+                  planNewTrip();
+                }}
+                className="h-12 flex-row items-center gap-2 rounded-full bg-primary pl-4 pr-5"
+                style={SHADOW}
+              >
+                <Plus size={16} weight="bold" color={colors.primaryForeground} />
+                <Text className="font-sans-bold text-sm text-primary-foreground">
+                  New trip
+                </Text>
+              </ScalePressable>
+            </Animated.View>
+            <Animated.View entering={FadeInUp.delay(40).duration(200)}>
+              <ScalePressable
+                onPress={() => {
+                  setMenuOpen(false);
+                  confirmSignOut();
+                }}
+                className="h-12 flex-row items-center gap-2 rounded-full bg-card pl-4 pr-5"
+                style={SHADOW}
+              >
+                <SignOut size={16} weight="bold" color={colors.destructive} />
+                <Text className="font-sans-bold text-sm text-foreground">
+                  Sign out
+                </Text>
+              </ScalePressable>
+            </Animated.View>
+          </>
+        ) : null}
+        <ScalePressable
+          onPress={() => setMenuOpen((open) => !open)}
+          hitSlop={6}
+          className="h-14 w-14 items-center justify-center rounded-full bg-foreground"
+          style={SHADOW}
+        >
+          {menuOpen ? (
+            <X size={22} weight="bold" color={colors.background} />
+          ) : (
+            <Plus size={22} weight="bold" color={colors.background} />
+          )}
+        </ScalePressable>
       </View>
     </SafeAreaView>
   );

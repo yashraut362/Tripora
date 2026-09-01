@@ -38,7 +38,7 @@ export default function RootLayout() {
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Protected guard={!!session}>
-          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="index" />
           <Stack.Screen name="plan" />
           <Stack.Screen name="trip/[id]" />
         </Stack.Protected>

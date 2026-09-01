@@ -19,6 +19,7 @@ export interface ItineraryStop {
   mapsQuery: string;
   lat?: number;
   lng?: number;
+  tips?: string;
 }
 
 export interface ItineraryDay {

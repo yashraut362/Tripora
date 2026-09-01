@@ -1,6 +1,7 @@
 import { Image } from "expo-image";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import {
+  CalendarPlus,
   CaretLeft,
   MapPin,
   PaperPlaneRight,
@@ -18,34 +19,31 @@ import {
 } from "react-native";
 import Animated, { Easing, FadeInUp } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AddToCalendarModal } from "@/components/add-to-calendar-modal";
 import { SelectPill } from "@/components/form/select-pill";
 import { ScalePressable } from "@/components/scale-pressable";
 import { TripMap, tripStops } from "@/components/trip-map";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { api, ApiError } from "@/lib/api";
-import type { ItineraryDay, TripDetail } from "@/lib/api";
+import type { ItineraryDay, ItineraryStop, TripDetail } from "@/lib/api";
 import { useThemeColors } from "@/lib/theme";
 import { TRAVEL_IMAGES } from "@/lib/travel-images";
 import { ACTIVITIES } from "@/lib/trip-data";
-import { cn } from "@/lib/utils";
+import { cn, mapsUrl } from "@/lib/utils";
 
 const EASE = Easing.bezier(0.32, 0.72, 0, 1);
-
-function mapsUrl(query: string, destination: string) {
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-    `${query} ${destination}`,
-  )}`;
-}
 
 function DaySection({
   itineraryDay,
   index,
   destination,
+  onAddToCalendar,
 }: {
   itineraryDay: ItineraryDay;
   index: number;
   destination: string;
+  onAddToCalendar: (stop: ItineraryStop) => void;
 }) {
   const colors = useThemeColors();
   const inkDay = index % 2 === 1;
@@ -87,18 +85,34 @@ function DaySection({
                 <Text className="font-sans-bold text-[10px] uppercase tracking-[2px] text-muted-foreground">
                   {stop.slot}
                 </Text>
-                <ScalePressable
-                  onPress={() =>
-                    Linking.openURL(mapsUrl(stop.mapsQuery, destination))
-                  }
-                  hitSlop={6}
-                  className="flex-row items-center gap-1 rounded-full bg-primary/10 px-3 py-1.5"
-                >
-                  <MapPin size={12} weight="fill" color={colors.primary} />
-                  <Text className="font-sans-bold text-[11px] text-primary">
-                    Map
-                  </Text>
-                </ScalePressable>
+                <View className="flex-row items-center gap-2">
+                  <ScalePressable
+                    onPress={() => onAddToCalendar(stop)}
+                    hitSlop={6}
+                    className="flex-row items-center gap-1 rounded-full bg-primary/10 px-3 py-1.5"
+                  >
+                    <CalendarPlus
+                      size={12}
+                      weight="fill"
+                      color={colors.primary}
+                    />
+                    <Text className="font-sans-bold text-[11px] text-primary">
+                      Calendar
+                    </Text>
+                  </ScalePressable>
+                  <ScalePressable
+                    onPress={() =>
+                      Linking.openURL(mapsUrl(stop.mapsQuery, destination))
+                    }
+                    hitSlop={6}
+                    className="flex-row items-center gap-1 rounded-full bg-primary/10 px-3 py-1.5"
+                  >
+                    <MapPin size={12} weight="fill" color={colors.primary} />
+                    <Text className="font-sans-bold text-[11px] text-primary">
+                      Map
+                    </Text>
+                  </ScalePressable>
+                </View>
               </View>
               <Text className="mt-1 font-sans-bold text-base text-foreground">
                 {stop.title}
@@ -127,6 +141,10 @@ export default function TripDetailScreen() {
   >([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [calendarTarget, setCalendarTarget] = useState<{
+    stop: ItineraryStop;
+    day: number;
+  } | null>(null);
 
   const loadTrip = useCallback(() => {
     if (!id) return;
@@ -421,6 +439,9 @@ export default function TripDetailScreen() {
                 itineraryDay={itineraryDay}
                 index={index}
                 destination={trip.destination}
+                onAddToCalendar={(stop) =>
+                  setCalendarTarget({ stop, day: itineraryDay.day })
+                }
               />
             ))
           )}
@@ -428,6 +449,13 @@ export default function TripDetailScreen() {
           )}
         </ScrollView>
       )}
+      {trip && calendarTarget ? (
+        <AddToCalendarModal
+          target={calendarTarget}
+          destination={trip.destination}
+          onClose={() => setCalendarTarget(null)}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }
