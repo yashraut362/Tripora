@@ -1,3 +1,4 @@
+import { Image } from "expo-image";
 import { NavigationArrow } from "phosphor-react-native";
 import { useRef } from "react";
 import { Linking, ScrollView, View } from "react-native";
@@ -16,6 +17,7 @@ export interface MapStop {
   title: string;
   lat: number;
   lng: number;
+  photoUrl?: string;
 }
 
 export function tripStops(detail: TripDetail): MapStop[] {
@@ -32,6 +34,7 @@ export function tripStops(detail: TripDetail): MapStop[] {
               title: stop.title,
               lat: stop.lat,
               lng: stop.lng,
+              photoUrl: stop.photoUrl,
             },
           ],
     ),
@@ -42,14 +45,19 @@ function escapeHtml(text: string) {
   return text
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 function buildMapHtml(stops: MapStop[]) {
   const pins = stops.map((stop) => ({
     lat: stop.lat,
     lng: stop.lng,
-    popup: `<b>${escapeHtml(stop.title)}</b><br>${escapeHtml(stop.destination)} · Day ${stop.day} · ${escapeHtml(stop.slot)}`,
+    popup:
+      (stop.photoUrl
+        ? `<img src="${escapeHtml(stop.photoUrl)}" style="width:170px;height:96px;object-fit:cover;border-radius:10px;display:block;margin-bottom:6px" />`
+        : "") +
+      `<b>${escapeHtml(stop.title)}</b><br>${escapeHtml(stop.destination)} · Day ${stop.day} · ${escapeHtml(stop.slot)}`,
   }));
   const data = JSON.stringify(pins).replace(/</g, "\\u003c");
   return `<!DOCTYPE html>
@@ -136,8 +144,16 @@ export function TripMap({ stops }: { stops: MapStop[] }) {
             <ScalePressable
               key={`${stop.tripId}-${index}`}
               onPress={() => focusStop(index)}
-              className="w-[250px] flex-row items-center gap-3 rounded-[20px] bg-card/95 px-4 py-3"
+              className="w-[250px] flex-row items-center gap-3 rounded-[20px] bg-card/95 px-3 py-3"
             >
+              {stop.photoUrl ? (
+                <Image
+                  source={{ uri: stop.photoUrl }}
+                  style={{ width: 44, height: 44, borderRadius: 14 }}
+                  contentFit="cover"
+                  transition={200}
+                />
+              ) : null}
               <View className="flex-1">
                 <Text
                   className="font-sans-bold text-sm text-foreground"
