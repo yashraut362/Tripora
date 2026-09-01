@@ -10,6 +10,7 @@ export interface TripSelections {
 
 export interface Trip extends TripSelections {
   id: string;
+  imageUrl?: string | null;
 }
 
 export interface ItineraryStop {
@@ -20,6 +21,7 @@ export interface ItineraryStop {
   lat?: number;
   lng?: number;
   tips?: string;
+  photoUrl?: string;
 }
 
 export interface ItineraryDay {

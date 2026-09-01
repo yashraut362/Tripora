@@ -64,54 +64,72 @@ function TripRow({
       <ScalePressable
         onPress={onOpen}
         scaleTo={0.98}
-        className="mb-3 rounded-[24px] bg-card px-5 py-4"
+        className="mb-3 overflow-hidden rounded-[24px] bg-card"
       >
-        <View className="flex-row items-center">
-          <View className="flex-1 pr-3">
-            <Text
-              className="font-sans-bold text-lg text-foreground"
-              numberOfLines={1}
-            >
-              {trip.destination}
-            </Text>
-            <Text className="mt-1 font-sans-medium text-xs text-muted-foreground">
-              {trip.days} {trip.days === 1 ? "day" : "days"} · $
-              {(trip.budget ?? 0).toLocaleString()}
-            </Text>
-          </View>
-
-          <View className="flex-row gap-2">
-            <ScalePressable
-              onPress={onEdit}
-              hitSlop={4}
-              className="h-10 w-10 items-center justify-center rounded-full bg-primary"
-            >
-              <PencilSimple size={15} weight="bold" color={colors.primaryForeground} />
-            </ScalePressable>
-            <ScalePressable
-              onPress={onDelete}
-              hitSlop={4}
-              className="h-10 w-10 items-center justify-center rounded-full bg-muted"
-            >
-              <TrashSimple size={15} weight="bold" color={colors.destructive} />
-            </ScalePressable>
-          </View>
-        </View>
-
-        {tripActivities.length > 0 ? (
-          <View className="mt-3 flex-row flex-wrap gap-1.5">
-            {tripActivities.map((activity) => (
-              <View
-                key={activity.id}
-                className="rounded-full bg-muted px-3 py-1.5"
-              >
-                <Text className="font-sans-semibold text-[11px] text-muted-foreground">
-                  {activity.label}
-                </Text>
-              </View>
-            ))}
-          </View>
+        {trip.imageUrl ? (
+          <Image
+            source={{ uri: trip.imageUrl }}
+            style={{ width: "100%", height: 128 }}
+            contentFit="cover"
+            transition={200}
+          />
         ) : null}
+        <View className="px-5 py-4">
+          <View className="flex-row items-center">
+            <View className="flex-1 pr-3">
+              <Text
+                className="font-sans-bold text-lg text-foreground"
+                numberOfLines={1}
+              >
+                {trip.destination}
+              </Text>
+              <Text className="mt-1 font-sans-medium text-xs text-muted-foreground">
+                {trip.days} {trip.days === 1 ? "day" : "days"} · $
+                {(trip.budget ?? 0).toLocaleString()}
+              </Text>
+            </View>
+
+            <View className="flex-row gap-2">
+              <ScalePressable
+                onPress={onEdit}
+                hitSlop={4}
+                className="h-10 w-10 items-center justify-center rounded-full bg-primary"
+              >
+                <PencilSimple
+                  size={15}
+                  weight="bold"
+                  color={colors.primaryForeground}
+                />
+              </ScalePressable>
+              <ScalePressable
+                onPress={onDelete}
+                hitSlop={4}
+                className="h-10 w-10 items-center justify-center rounded-full bg-muted"
+              >
+                <TrashSimple
+                  size={15}
+                  weight="bold"
+                  color={colors.destructive}
+                />
+              </ScalePressable>
+            </View>
+          </View>
+
+          {tripActivities.length > 0 ? (
+            <View className="mt-3 flex-row flex-wrap gap-1.5">
+              {tripActivities.map((activity) => (
+                <View
+                  key={activity.id}
+                  className="rounded-full bg-muted px-3 py-1.5"
+                >
+                  <Text className="font-sans-semibold text-[11px] text-muted-foreground">
+                    {activity.label}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+        </View>
       </ScalePressable>
     </Animated.View>
   );
@@ -242,7 +260,8 @@ export default function Index() {
           </Text>
           <Text className="mt-1 font-sans-medium text-sm text-muted-foreground">
             {firstName ? `Hey ${firstName} — ` : ""}
-            {trips.length} {trips.length === 1 ? "adventure" : "adventures"} planned
+            {trips.length} {trips.length === 1 ? "adventure" : "adventures"}{" "}
+            planned
           </Text>
         </Animated.View>
 
@@ -320,7 +339,11 @@ export default function Index() {
                 className="h-12 flex-row items-center gap-2 rounded-full bg-primary pl-4 pr-5"
                 style={SHADOW}
               >
-                <Plus size={16} weight="bold" color={colors.primaryForeground} />
+                <Plus
+                  size={16}
+                  weight="bold"
+                  color={colors.primaryForeground}
+                />
                 <Text className="font-sans-bold text-sm text-primary-foreground">
                   New trip
                 </Text>

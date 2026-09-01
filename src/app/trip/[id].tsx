@@ -80,46 +80,56 @@ function DaySection({
         {itineraryDay.stops.map((stop) => (
           <View key={stop.slot} className="relative mb-3">
             <View className="absolute -left-[21.5px] top-5 h-2.5 w-2.5 rounded-full border-2 border-background bg-primary" />
-            <View className="rounded-[20px] bg-card px-4 py-3">
-              <View className="flex-row items-center justify-between">
-                <Text className="font-sans-bold text-[10px] uppercase tracking-[2px] text-muted-foreground">
-                  {stop.slot}
-                </Text>
-                <View className="flex-row items-center gap-2">
-                  <ScalePressable
-                    onPress={() => onAddToCalendar(stop)}
-                    hitSlop={6}
-                    className="flex-row items-center gap-1 rounded-full bg-primary/10 px-3 py-1.5"
-                  >
-                    <CalendarPlus
-                      size={12}
-                      weight="fill"
-                      color={colors.primary}
-                    />
-                    <Text className="font-sans-bold text-[11px] text-primary">
-                      Calendar
-                    </Text>
-                  </ScalePressable>
-                  <ScalePressable
-                    onPress={() =>
-                      Linking.openURL(mapsUrl(stop.mapsQuery, destination))
-                    }
-                    hitSlop={6}
-                    className="flex-row items-center gap-1 rounded-full bg-primary/10 px-3 py-1.5"
-                  >
-                    <MapPin size={12} weight="fill" color={colors.primary} />
-                    <Text className="font-sans-bold text-[11px] text-primary">
-                      Map
-                    </Text>
-                  </ScalePressable>
+            <View className="overflow-hidden rounded-[20px] bg-card">
+              {stop.photoUrl ? (
+                <Image
+                  source={{ uri: stop.photoUrl }}
+                  style={{ width: "100%", height: 128 }}
+                  contentFit="cover"
+                  transition={200}
+                />
+              ) : null}
+              <View className="px-4 py-3">
+                <View className="flex-row items-center justify-between">
+                  <Text className="font-sans-bold text-[10px] uppercase tracking-[2px] text-muted-foreground">
+                    {stop.slot}
+                  </Text>
+                  <View className="flex-row items-center gap-2">
+                    <ScalePressable
+                      onPress={() => onAddToCalendar(stop)}
+                      hitSlop={6}
+                      className="flex-row items-center gap-1 rounded-full bg-primary/10 px-3 py-1.5"
+                    >
+                      <CalendarPlus
+                        size={12}
+                        weight="fill"
+                        color={colors.primary}
+                      />
+                      <Text className="font-sans-bold text-[11px] text-primary">
+                        Calendar
+                      </Text>
+                    </ScalePressable>
+                    <ScalePressable
+                      onPress={() =>
+                        Linking.openURL(mapsUrl(stop.mapsQuery, destination))
+                      }
+                      hitSlop={6}
+                      className="flex-row items-center gap-1 rounded-full bg-primary/10 px-3 py-1.5"
+                    >
+                      <MapPin size={12} weight="fill" color={colors.primary} />
+                      <Text className="font-sans-bold text-[11px] text-primary">
+                        Map
+                      </Text>
+                    </ScalePressable>
+                  </View>
                 </View>
+                <Text className="mt-1 font-sans-bold text-base text-foreground">
+                  {stop.title}
+                </Text>
+                <Text className="mt-0.5 font-sans-medium text-xs leading-4 text-muted-foreground">
+                  {stop.detail}
+                </Text>
               </View>
-              <Text className="mt-1 font-sans-bold text-base text-foreground">
-                {stop.title}
-              </Text>
-              <Text className="mt-0.5 font-sans-medium text-xs leading-4 text-muted-foreground">
-                {stop.detail}
-              </Text>
             </View>
           </View>
         ))}
@@ -345,8 +355,8 @@ export default function TripDetailScreen() {
             <View className="mt-4">
               {messages.length === 0 && !sending ? (
                 <Text className="mb-3 font-sans-medium text-sm leading-5 text-muted-foreground">
-                  Tell me what to change — "no plans for day 3 evening, I have
-                  a flight", "swap day 1 and day 2", "more food spots".
+                  Tell me what to change — "no plans for day 3 evening, I have a
+                  flight", "swap day 1 and day 2", "more food spots".
                 </Text>
               ) : null}
               {messages.map((message, index) => (
@@ -415,36 +425,36 @@ export default function TripDetailScreen() {
                 <Text variant="eyebrow">Day by day</Text>
               </Animated.View>
 
-          {trip.itinerary.length === 0 ? (
-            <View className="items-center rounded-[24px] bg-card px-6 py-10">
-              <Text className="text-center font-sans-semibold text-sm text-foreground">
-                Crafting your itinerary…
-              </Text>
-              <Text className="mt-1 text-center font-sans-medium text-xs text-muted-foreground">
-                Our AI is picking real spots for your trip.
-              </Text>
-              <ScalePressable
-                onPress={loadTrip}
-                className="mt-5 h-11 items-center justify-center rounded-full bg-primary px-6"
-              >
-                <Text className="font-sans-bold text-sm text-primary-foreground">
-                  Check again
-                </Text>
-              </ScalePressable>
-            </View>
-          ) : (
-            trip.itinerary.map((itineraryDay, index) => (
-              <DaySection
-                key={itineraryDay.day}
-                itineraryDay={itineraryDay}
-                index={index}
-                destination={trip.destination}
-                onAddToCalendar={(stop) =>
-                  setCalendarTarget({ stop, day: itineraryDay.day })
-                }
-              />
-            ))
-          )}
+              {trip.itinerary.length === 0 ? (
+                <View className="items-center rounded-[24px] bg-card px-6 py-10">
+                  <Text className="text-center font-sans-semibold text-sm text-foreground">
+                    Crafting your itinerary…
+                  </Text>
+                  <Text className="mt-1 text-center font-sans-medium text-xs text-muted-foreground">
+                    Our AI is picking real spots for your trip.
+                  </Text>
+                  <ScalePressable
+                    onPress={loadTrip}
+                    className="mt-5 h-11 items-center justify-center rounded-full bg-primary px-6"
+                  >
+                    <Text className="font-sans-bold text-sm text-primary-foreground">
+                      Check again
+                    </Text>
+                  </ScalePressable>
+                </View>
+              ) : (
+                trip.itinerary.map((itineraryDay, index) => (
+                  <DaySection
+                    key={itineraryDay.day}
+                    itineraryDay={itineraryDay}
+                    index={index}
+                    destination={trip.destination}
+                    onAddToCalendar={(stop) =>
+                      setCalendarTarget({ stop, day: itineraryDay.day })
+                    }
+                  />
+                ))
+              )}
             </>
           )}
         </ScrollView>
