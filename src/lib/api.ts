@@ -31,9 +31,22 @@ export interface ItineraryDay {
   stops: ItineraryStop[];
 }
 
+export interface FoodPlace {
+  name: string;
+  kind: string;
+  description: string;
+  mustTry: string;
+  mapsQuery: string;
+  lat?: number;
+  lng?: number;
+  tags: string[];
+  photoUrl?: string;
+}
+
 export interface TripDetail extends Trip {
   intro: string;
   itinerary: ItineraryDay[];
+  food: FoodPlace[];
 }
 
 export class ApiError extends Error {

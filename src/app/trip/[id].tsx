@@ -3,10 +3,15 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import {
   CalendarPlus,
   CaretLeft,
+  ChatCircleDots,
+  ForkKnife,
+  ListBullets,
   MapPin,
+  MapTrifold,
   PaperPlaneRight,
   PencilSimple,
   TrashSimple,
+  type Icon,
 } from "phosphor-react-native";
 import { useCallback, useState } from "react";
 import {
@@ -20,19 +25,141 @@ import {
 import Animated, { Easing, FadeInUp } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AddToCalendarModal } from "@/components/add-to-calendar-modal";
-import { SelectPill } from "@/components/form/select-pill";
 import { ScalePressable } from "@/components/scale-pressable";
 import { TripMap, tripStops } from "@/components/trip-map";
 import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { api, ApiError } from "@/lib/api";
-import type { ItineraryDay, ItineraryStop, TripDetail } from "@/lib/api";
+import type {
+  FoodPlace,
+  ItineraryDay,
+  ItineraryStop,
+  TripDetail,
+} from "@/lib/api";
 import { useThemeColors } from "@/lib/theme";
 import { TRAVEL_IMAGES } from "@/lib/travel-images";
 import { ACTIVITIES } from "@/lib/trip-data";
 import { cn, mapsUrl } from "@/lib/utils";
 
 const EASE = Easing.bezier(0.32, 0.72, 0, 1);
+
+function TabPill({
+  label,
+  icon: TabIcon,
+  selected,
+  onPress,
+}: {
+  label: string;
+  icon: Icon;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const colors = useThemeColors();
+
+  return (
+    <ScalePressable
+      onPress={onPress}
+      hitSlop={4}
+      style={{ flex: 1 }}
+      className={cn(
+        "w-full flex-row items-center justify-center gap-1.5 rounded-full px-1 py-3",
+        selected ? "bg-foreground" : "bg-card",
+      )}
+    >
+      <TabIcon
+        size={14}
+        weight="bold"
+        color={selected ? colors.background : colors.foreground}
+      />
+      <Text
+        numberOfLines={1}
+        className={cn(
+          "font-sans-semibold text-xs",
+          selected ? "text-background" : "text-foreground",
+        )}
+      >
+        {label}
+      </Text>
+    </ScalePressable>
+  );
+}
+
+function FoodCard({
+  place,
+  destination,
+  index,
+}: {
+  place: FoodPlace;
+  destination: string;
+  index: number;
+}) {
+  const colors = useThemeColors();
+
+  return (
+    <Animated.View
+      entering={FadeInUp.delay(120 + index * 60)
+        .duration(600)
+        .easing(EASE)}
+      className="mb-3"
+    >
+      <View className="overflow-hidden rounded-[20px] bg-card">
+        {place.photoUrl ? (
+          <Image
+            source={{ uri: place.photoUrl }}
+            style={{ width: "100%", height: 128 }}
+            contentFit="cover"
+            transition={200}
+          />
+        ) : null}
+        <View className="px-4 py-3">
+          <View className="flex-row items-center justify-between">
+            <Text className="font-sans-bold text-[10px] uppercase tracking-[2px] text-muted-foreground">
+              {place.kind}
+            </Text>
+            <ScalePressable
+              onPress={() =>
+                Linking.openURL(mapsUrl(place.mapsQuery, destination))
+              }
+              hitSlop={6}
+              className="flex-row items-center gap-1 rounded-full bg-primary/10 px-3 py-1.5"
+            >
+              <MapPin size={12} weight="fill" color={colors.primary} />
+              <Text className="font-sans-bold text-[11px] text-primary">
+                Map
+              </Text>
+            </ScalePressable>
+          </View>
+          <Text className="mt-1 font-sans-bold text-base text-foreground">
+            {place.name}
+          </Text>
+          <Text className="mt-0.5 font-sans-medium text-xs leading-4 text-muted-foreground">
+            {place.description}
+          </Text>
+          <Text className="mt-1.5 font-sans-bold text-xs text-foreground">
+            Must try:{" "}
+            <Text className="font-sans-medium text-xs text-muted-foreground">
+              {place.mustTry}
+            </Text>
+          </Text>
+          {place.tags.length > 0 ? (
+            <View className="mt-2 flex-row flex-wrap gap-1.5">
+              {place.tags.map((tag) => (
+                <View
+                  key={tag}
+                  className="rounded-full bg-primary/10 px-2.5 py-1"
+                >
+                  <Text className="font-sans-semibold text-[10px] text-primary">
+                    {tag}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
+        </View>
+      </View>
+    </Animated.View>
+  );
+}
 
 function DaySection({
   itineraryDay,
@@ -145,7 +272,9 @@ export default function TripDetailScreen() {
   const [trip, setTrip] = useState<TripDetail | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [loadError, setLoadError] = useState(false);
-  const [tab, setTab] = useState<"itinerary" | "map" | "edit">("itinerary");
+  const [tab, setTab] = useState<"itinerary" | "map" | "food" | "edit">(
+    "itinerary",
+  );
   const [messages, setMessages] = useState<
     { role: "user" | "ai"; text: string }[]
   >([]);
@@ -327,18 +456,27 @@ export default function TripDetailScreen() {
           ) : null}
 
           <View className="mt-5 flex-row gap-2">
-            <SelectPill
+            <TabPill
               label="Itinerary"
+              icon={ListBullets}
               selected={tab === "itinerary"}
               onPress={() => setTab("itinerary")}
             />
-            <SelectPill
+            <TabPill
               label="Map"
+              icon={MapTrifold}
               selected={tab === "map"}
               onPress={() => setTab("map")}
             />
-            <SelectPill
+            <TabPill
+              label="Food"
+              icon={ForkKnife}
+              selected={tab === "food"}
+              onPress={() => setTab("food")}
+            />
+            <TabPill
               label="Edit"
+              icon={ChatCircleDots}
               selected={tab === "edit"}
               onPress={() => setTab("edit")}
             />
@@ -351,12 +489,44 @@ export default function TripDetailScreen() {
             >
               <TripMap stops={tripStops(trip)} />
             </View>
+          ) : tab === "food" ? (
+            <View className="mt-4">
+              {trip.food.length === 0 ? (
+                <View className="items-center rounded-[24px] bg-card px-6 py-10">
+                  <Text className="text-center font-sans-semibold text-sm text-foreground">
+                    Finding tasty spots…
+                  </Text>
+                  <Text className="mt-1 text-center font-sans-medium text-xs text-muted-foreground">
+                    Our AI is gathering cafes, restaurants and street food —
+                    this usually takes 1–2 minutes.
+                  </Text>
+                  <ScalePressable
+                    onPress={loadTrip}
+                    className="mt-5 h-11 items-center justify-center rounded-full bg-primary px-6"
+                  >
+                    <Text className="font-sans-bold text-sm text-primary-foreground">
+                      Check again
+                    </Text>
+                  </ScalePressable>
+                </View>
+              ) : (
+                trip.food.map((place, index) => (
+                  <FoodCard
+                    key={place.name}
+                    place={place}
+                    destination={trip.destination}
+                    index={index}
+                  />
+                ))
+              )}
+            </View>
           ) : tab === "edit" ? (
             <View className="mt-4">
               {messages.length === 0 && !sending ? (
                 <Text className="mb-3 font-sans-medium text-sm leading-5 text-muted-foreground">
                   Tell me what to change — "no plans for day 3 evening, I have a
-                  flight", "swap day 1 and day 2", "more food spots".
+                  flight", "swap day 1 and day 2". Food guide too — "add more
+                  street food", "swap the bar for a rooftop one".
                 </Text>
               ) : null}
               {messages.map((message, index) => (
