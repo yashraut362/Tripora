@@ -21,6 +21,7 @@ import { ActivitiesStep } from "@/components/form/activities-step";
 import { BudgetStep } from "@/components/form/budget-step";
 import { DaysStep } from "@/components/form/days-step";
 import { DestinationStep } from "@/components/form/destination-step";
+import { NotesStep } from "@/components/form/notes-step";
 import { ScalePressable } from "@/components/scale-pressable";
 import { Text } from "@/components/ui/text";
 import { api } from "@/lib/api";
@@ -54,6 +55,12 @@ const STEPS = [
     title: "What are you into?",
     subtitle: "Pick as many as you like.",
   },
+  {
+    eyebrow: "Wishes",
+    title: "Anything specific?",
+    subtitle:
+      "Tell us in your own words — we'll shape the plan around it. Optional.",
+  },
 ];
 
 export default function PlanScreen() {
@@ -67,6 +74,7 @@ export default function PlanScreen() {
   const [days, setDays] = useState(DEFAULT_DAYS);
   const [budget, setBudget] = useState<number | null>(DEFAULT_BUDGET);
   const [activities, setActivities] = useState<string[]>([]);
+  const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(editing);
   const [saving, setSaving] = useState(false);
 
@@ -87,6 +95,7 @@ export default function PlanScreen() {
         setDays(trip.days);
         setBudget(trip.budget);
         setActivities(trip.activities);
+        setNotes(trip.notes);
         setLoading(false);
       })
       .catch(() => {
@@ -134,6 +143,7 @@ export default function PlanScreen() {
       days,
       budget,
       activities,
+      notes: notes.trim(),
     };
     setSaving(true);
     const save = editing
@@ -219,8 +229,10 @@ export default function PlanScreen() {
               <DaysStep value={days} onChange={setDays} />
             ) : step === 2 ? (
               <BudgetStep value={budget} onChange={setBudget} />
-            ) : (
+            ) : step === 3 ? (
               <ActivitiesStep value={activities} onChange={setActivities} />
+            ) : (
+              <NotesStep value={notes} onChange={setNotes} />
             )}
           </Animated.View>
 

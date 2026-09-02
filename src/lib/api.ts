@@ -6,6 +6,7 @@ export interface TripSelections {
   days: number;
   budget: number | null;
   activities: string[];
+  notes: string;
 }
 
 export interface Trip extends TripSelections {

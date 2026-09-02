@@ -431,7 +431,8 @@ export default function TripDetailScreen() {
                     Crafting your itinerary…
                   </Text>
                   <Text className="mt-1 text-center font-sans-medium text-xs text-muted-foreground">
-                    Our AI is picking real spots for your trip.
+                    Our AI is picking real spots for your trip — this usually
+                    takes 1–2 minutes.
                   </Text>
                   <ScalePressable
                     onPress={loadTrip}
