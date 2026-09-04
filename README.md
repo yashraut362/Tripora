@@ -2,9 +2,13 @@
 
 The mobile app for **Tripora, an AI travel planner**. Plan a trip in a five-step wizard and get a day-by-day itinerary of real places with photos, an interactive map, a curated food guide, and a chat assistant that reshapes the plan on request.
 
-All AI generation, auth and data live in the [Tripora backend](https://github.com/) <!-- TODO: link Tripora-backend repo -->.
+### 🚏 All AI generation, auth and data live in the [Tripora backend](https://github.com/) <!-- TODO: link Tripora-backend repo -->
 
 > 🎬 **Demo video:** _coming soon_ <!-- TODO: drag your screen recording (.mp4) here on GitHub -->
+
+## Architecture
+
+![Tripora architecture](docs/architecture.png)
 
 ## Screens
 
